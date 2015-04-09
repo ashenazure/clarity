@@ -30,10 +30,21 @@ var alarmImageURL = mergeURI(application.url, "./assets/alarm_icon.png")
 var yoImageURL = mergeURI(application.url, "./assets/yo_icon.png")
 var drawImageURL = mergeURI(application.url, "./assets/draw_icon.png")
 
+var brightnessBox = new Container({
+    left:0, right:0, top:100, bottom:0,
+    skin:whiteSkin,
+});
+
+var brightnessTap = Object.create(Behavior.prototype,{
+    onTouchBegan: {value: function(content){
+        mainContainer.add(brightnessContainer);
+        brightnessContainer.add(brightnessBox);
+    }}
+});
 
 // TODO NOT SURE HOW TO MAKE THESE INTO BUTTONS UGHHH
 var brightnessTabImage = new Picture({
-	bottom: 5, left: 10, height:50, width:50, url:brightnessImageURL});
+	bottom: 5, left: 10, height:50, width:50, url:brightnessImageURL, active:true, behavior: brightnessTap});
 var alarmTabImage = new Picture({
 	bottom: 5, left: 90, height:50, width:50, url:alarmImageURL});
 var yoTabImage = new Picture({
@@ -49,6 +60,17 @@ var BrightnessSlider = SLIDERS.HorizontalSlider.template(function($){ return{
     onValueChanged: { value: function(container){
       SLIDERS.HorizontalSliderBehavior.prototype.onValueChanged.call(this, container);
       trace("Brightness Value is: " + this.data.value + "\n");
+      decVal = Math.round(this.data.value*2.55);
+      //trace("decVal is: " + decVal + "\n");
+      hexVal = decVal.toString(16);
+      brightnessContainer.remove(brightnessBox);
+      if (hexVal.toString().length == 1) {
+          hexVal = "0" + hexVal;
+      }
+      //trace("hexVal is: " + hexVal + "\n");
+      newFill = "#" + hexVal + hexVal + hexVal;
+      brightnessBox.skin = new Skin({fill:newFill});
+      brightnessContainer.add(brightnessBox);
   }}})
 }});
 var slider = new BrightnessSlider({ min:0, max:100, value:50,  });
