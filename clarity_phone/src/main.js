@@ -87,7 +87,8 @@ var brightnessContainer = new Container({
 //					Alarm Container
 //
 //
-//			Note to do: everytime clock is changed; update the pin simulator and send the appropriate message	
+//			Note to do: everytime clock is changed; update the pin simulator and send the appropriate message
+//			Assuming its "on" of course	
 //
 /////////////////////////////////////////////////////////////////////
 var alarmTap = Object.create(Behavior.prototype,{
@@ -203,9 +204,10 @@ var alarmContainer = new Container({
 	]
 });
 
-
+////////////////////////////////////////////
 // Tab Bar Buttons
 //
+///////////////////////////////////////////
 var brightnessTabImage = new Picture({
 	bottom: 5, left: 10, height:50, width:50, url:brightnessImageURL, active:true, behavior: brightnessTap});
 var alarmTabImage = new Picture({
@@ -215,7 +217,10 @@ var yoTabImage = new Picture({
 var drawTabImage = new Picture({
 	bottom: 5, left: 265, height:50, width:50, url:drawImageURL});
 
+////////////////////////////////////////////
 // MAIN CONTAINER
+//
+////////////////////////////////////////////
 var mainContainer = new Container({
 	left:0, right:0, top:0, bottom:0,
 	skin: whiteSkin,
