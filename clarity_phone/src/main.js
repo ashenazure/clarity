@@ -3,7 +3,9 @@
 var whiteSkin = new Skin( { fill:"white" } );
 var tealSkin = new Skin ( { fill:"#65D9D3" } );
 var greySkin = new Skin( { fill:"#F6F6F6" } );
+var mediumGreySkin = new Skin( { fill: "#CCCCCC" } );
 var darkGreySkin = new Skin( { fill:"#979797" });
+var greenSkin = new Skin( { fill:"green" });
 var THEME = require('themes/flat/theme');
 var SLIDERS = require('controls/sliders');
 var SCROLLER = require('mobile/scroller');
@@ -66,6 +68,7 @@ var arrowDownImageURL = mergeURI(application.url, "./assets/arrow_down_button.pn
 //					Brightness container and content
 //
 /////////////////////////////////////////////////////////////////////
+
 var brightnessBox = new Container({
     left:0, right:0, top:100, bottom:0,
     skin:whiteSkin,
@@ -118,6 +121,7 @@ var brightnessContainer = new Container({
 //			Assuming its "on" of course	
 //
 /////////////////////////////////////////////////////////////////////
+
 var alarmTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
     	mainContainer.remove(mainContainer.last);
@@ -236,23 +240,88 @@ var alarmContainer = new Container({
 	]
 });
 
+
+
+/////////////////////////////////////////////////////////////////////
+//
+//					YO! Feature
+//
+/////////////////////////////////////////////////////////////////////
+
+var yoTap = Object.create(Behavior.prototype,{
+    onTouchBegan: {value: function(content){
+    	mainContainer.remove(mainContainer.last);
+        mainContainer.add(yoContainer);
+    }}
+});
+
+var contactsTitleStyle = new Style( { font:"20px", color:"#676767" } );
+var contactsStyle = new Style( { font:"30px bold", color:"black" } );
+
+var contactsTitleLabel = new Label({top:10, left:160, height:20, string:"Contacts", style: contactsTitleStyle});
+
+//var yoTap = Object.create(Behavior.prototype,{
+    //onTouchBegan: {value: function(content){
+    //	content.invoke(new Message("YO!"), Message.JSON);
+    //}}
+//});
+
+var alexLabel = new Label({top:25, left:60, height:30, string:"Alex", style: contactsStyle});
+var andersLabel = new Label({top:75, left:60, height:30, string:"Anders", style: contactsStyle});
+var jennyLabel = new Label({top:125, left:60, height:30, string:"Jenny", style: contactsStyle});
+var johnLabel = new Label({top:175, left:60, height:30, string:"John", style: contactsStyle});
+var mironLabel = new Label({top:225, left:60, height:30, string:"Miron", style: contactsStyle});
+
+var contactsTitleContainer = new Container({
+	top:0, bottom: 370, height: 20, width:400,
+	skin:mediumGreySkin,
+	contents:[
+		contactsTitleLabel
+	]
+});
+
+var contactsContainer = new Container({
+	top:40, bottom: 0, height: 400, width:400,
+	skin:greySkin,
+	contents:[
+		alexLabel, 
+		andersLabel,
+		jennyLabel,
+		johnLabel,
+		mironLabel
+	]
+});
+
+var yoContainer = new Container({
+	top:65, bottom: 60, height: 400, width:400,
+	skin:greySkin,
+	contents:[
+		contactsTitleContainer,
+		contactsContainer
+	]
+});
+
 ////////////////////////////////////////////
+//
 // Tab Bar Buttons
 //
 ///////////////////////////////////////////
+
 var brightnessTabImage = new Picture({
 	bottom: 5, left: 10, height:50, width:50, url:brightnessImageURL, active:true, behavior: brightnessTap});
 var alarmTabImage = new Picture({
 	bottom: 5, left: 90, height:50, width:50, url:alarmImageURL, active:true, behavior: alarmTap});
 var yoTabImage = new Picture({
-	bottom: 5, left: 180, height:50, width:50, url:yoImageURL});
+	bottom: 5, left: 180, height:50, width:50, url:yoImageURL, active:true, behavior: yoTap});
 var drawTabImage = new Picture({
 	bottom: 5, left: 265, height:50, width:50, url:drawImageURL});
 
 ////////////////////////////////////////////
+//
 // MAIN CONTAINER
 //
 ////////////////////////////////////////////
+
 var mainContainer = new Container({
 	left:0, right:0, top:0, bottom:0,
 	skin: whiteSkin,
