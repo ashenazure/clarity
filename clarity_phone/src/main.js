@@ -260,17 +260,17 @@ var contactsStyle = new Style( { font:"30px bold", color:"black" } );
 
 var contactsTitleLabel = new Label({top:10, left:160, height:20, string:"Contacts", style: contactsTitleStyle});
 
-//var yoTap = Object.create(Behavior.prototype,{
-    //onTouchBegan: {value: function(content){
-    //	content.invoke(new Message("YO!"), Message.JSON);
-    //}}
-//});
+var yoTapWithConsent = Object.create(Behavior.prototype,{
+    onTouchBegan: {value: function(content){
+    	content.invoke(new Message("YO!"), Message.JSON);
+    }}
+});
 
-var alexLabel = new Label({top:25, left:60, height:30, string:"Alex", style: contactsStyle});
-var andersLabel = new Label({top:75, left:60, height:30, string:"Anders", style: contactsStyle});
-var jennyLabel = new Label({top:125, left:60, height:30, string:"Jenny", style: contactsStyle});
-var johnLabel = new Label({top:175, left:60, height:30, string:"John", style: contactsStyle});
-var mironLabel = new Label({top:225, left:60, height:30, string:"Miron", style: contactsStyle});
+var alexLabel = new Label({top:25, left:60, height:30, string:"Alex", style: contactsStyle, behavior: yoTapWithConsent});
+var andersLabel = new Label({top:75, left:60, height:30, string:"Anders", style: contactsStyle, behavior: yoTapWithConsent});
+var jennyLabel = new Label({top:125, left:60, height:30, string:"Jenny", style: contactsStyle, behavior: yoTapWithConsent});
+var johnLabel = new Label({top:175, left:60, height:30, string:"John", style: contactsStyle, behavior: yoTapWithConsent});
+var mironLabel = new Label({top:225, left:60, height:30, string:"Miron", style: contactsStyle, behavior: yoTapWithConsent});
 
 var contactsTitleContainer = new Container({
 	top:0, bottom: 370, height: 20, width:400,
