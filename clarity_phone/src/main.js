@@ -9,6 +9,33 @@ var SLIDERS = require('controls/sliders');
 var SCROLLER = require('mobile/scroller');
 var SWITCHES = require('controls/switch');
 
+///////////////////
+// Device Handling
+///////////////////
+
+Handler.bind("/discover", Behavior({
+	onInvoke: function(handler, message){
+		deviceURL = JSON.parse(message.requestText).url;
+	},
+}));
+
+Handler.bind("/forget", Behavior({
+	onInvoke: function(handler, message){
+		deviceURL = "";
+	}
+}));
+
+var ApplicationBehavior = Behavior.template({
+	onDisplayed: function(application) {
+		application.discover("clarity_pin.app");
+	},
+	onQuit: function(application) {
+		application.forget("clarity_pin.app");
+	},
+})
+
+//////////////////////////
+
 // Top Bar and logo
 var logoImageURL = mergeURI(application.url, "./assets/logo.png")
 var logo = new Picture({
@@ -106,6 +133,7 @@ var hourLabel = new Label({top: 150, left:133,height:50, string:"0" + hour, styl
 var hourIncreaseTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
 		if(hour < 24) {
+		    content.invoke(new Message(deviceURL + "hourUp"), Message.JSON);
 			hour++;
 			if(hour < 10) {
 				hourLabel.string = "0" + hour;
@@ -118,6 +146,7 @@ var hourIncreaseTap = Object.create(Behavior.prototype,{
 var hourDecreaseTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
 		if(hour > 1) {
+		    content.invoke(new Message(deviceURL + "hourDown"), Message.JSON);
 			hour--;
 			hourLabel.string = hour;
 			if(hour < 10) {
@@ -146,6 +175,7 @@ var minuteLabel = new Label({top: 150, left:223,height:50, string:"00", style: c
 var minuteIncreaseTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
 		if(minute < 59) {
+		    content.invoke(new Message(deviceURL + "minuteUp"), Message.JSON);
 			minute++;
 			if(minute < 10) {
 				minuteLabel.string = "0" + minute;
@@ -158,6 +188,7 @@ var minuteIncreaseTap = Object.create(Behavior.prototype,{
 var minuteDecreaseTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
 		if(minute > 0) {
+		    content.invoke(new Message(deviceURL + "minuteDown"), Message.JSON);
 			minute--;
 			minuteLabel.string = minute;
 			if(minute < 10) {
@@ -183,6 +214,7 @@ var alarmSwitchTemplate = SWITCHES.SwitchButton.template(function($){ return{
   behavior: Object.create(SWITCHES.SwitchButtonBehavior.prototype, {
     onValueChanged: { value: function(container){
       SWITCHES.SwitchButtonBehavior.prototype.onValueChanged.call(this, container);
+      container.invoke(new Message(deviceURL + "alarmSwitch"), Message.JSON);
       trace("Alarm is set to: " + this.data.value + "\n");
   }}})
 }});
@@ -236,5 +268,7 @@ var mainContainer = new Container({
 		brightnessContainer
 	]
 });
+
+application.behavior = new ApplicationBehavior();
 
 application.add(mainContainer);
