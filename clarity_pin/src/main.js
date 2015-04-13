@@ -8,19 +8,69 @@ var bigLabelStyle = new Style( { font: "bold 48px", color:"black" } );
 var ApplicationBehavior = Behavior.template({
 	onLaunch: function(application) {
 		application.shared = true;
-		//application.discover("clarity_phone.app");
+		application.discover("clarity_phone.app");
 	},
 	onQuit: function(application) {
 		application.shared = false;
-		//application.forget("clarity_phone.app");
+		application.forget("clarity_phone.app");
 	},
 })
+
+var brightnessBox = new Container({
+    width:300, height:400,
+    skin:whiteSkin,
+});
+
+var brightnessContainer = new Container({
+		top:0,
+        skin:whiteSkin,
+        name: "container",
+        contents:[
+                brightnessBox
+        ]
+});
 
 ///////////////////////////////////////////////////////////
 //
 // Handlers
 //
 ///////////////////////////////////////////////////////////
+
+var deviceURL = "";
+ 
+Handler.bind("/discover", Behavior({
+        onInvoke: function(handler, message){
+                deviceURL = JSON.parse(message.requestText).url;
+        },
+}));
+ 
+Handler.bind("/forget", Behavior({
+        onInvoke: function(handler, message){
+                deviceURL = "";
+        }
+}));
+
+Handler.bind("/requestBrightness", Behavior({
+	onInvoke: function(handler, message){
+		handler.invoke(new Message(deviceURL + "currentBrightness"), Message.JSON);
+	},
+	onComplete: function(handler, message, json) {
+		if (json) {
+			trace(json.brightness);
+      		decVal = Math.round(json.brightness*2.55);
+      		//trace("decVal is: " + decVal + "\n");
+      		hexVal = decVal.toString(16);
+      		brightnessContainer.remove(brightnessBox);
+      		if (hexVal.toString().length == 1) {
+          		hexVal = "0" + hexVal;
+      		}
+      		//trace("hexVal is: " + hexVal + "\n");
+      		newFill = "#" + hexVal + hexVal + hexVal;
+      		brightnessBox.skin = new Skin({fill:newFill});
+      		brightnessContainer.add(brightnessBox);
+		}	
+	}
+}));
 
 Handler.bind("/hourUp", Behavior({
 	onInvoke: function(handler, message){
@@ -98,6 +148,7 @@ Handler.bind("/removeYo", Behavior({
 	}
 }));
 
+
 var YoBox = new Container({
     left: 100, right: 100, top: 80, bottom: 80, skin: redSkin,
     contents: [
@@ -163,3 +214,4 @@ application.invoke( new MessageWithObject( "pins:/analogSensor/read?repeat=on&ca
 application.behavior = new ApplicationBehavior();
 mainContainer = new mainContainerObj();
 application.add(mainContainer);
+mainContainer.add(brightnessContainer);

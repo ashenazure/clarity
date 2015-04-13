@@ -10,7 +10,7 @@ var THEME = require('themes/flat/theme');
 var SLIDERS = require('controls/sliders');
 var SCROLLER = require('mobile/scroller');
 var SWITCHES = require('controls/switch');
- 
+var currentBrightness = 0;
 ///////////////////
 // Device Handling
 ///////////////////
@@ -27,6 +27,21 @@ Handler.bind("/forget", Behavior({
         onInvoke: function(handler, message){
                 deviceURL = "";
         }
+}));
+
+Handler.bind("/sendNewBrightness", Behavior({
+	onInvoke: function(handler, message){
+		if (deviceURL != ''){
+			handler.invoke(new Message(deviceURL + "requestBrightness"), Message.JSON);
+		}
+	}
+}));
+
+Handler.bind("/currentBrightness", Behavior({
+	onInvoke: function(handler, message){
+		message.responseText = JSON.stringify( { brightness: currentBrightness } );
+		message.status = 200;
+	}
 }));
  
 //var connectionApplicationBehavior = Behavior.template({
@@ -84,13 +99,15 @@ var brightnessTap = Object.create(Behavior.prototype,{
         mainContainer.add(brightnessContainer);
     }}
 });
- 
+
 var BrightnessSlider = SLIDERS.HorizontalSlider.template(function($){ return{
   height:20, left:50, right:50, top: 50,
   behavior: Object.create(SLIDERS.HorizontalSliderBehavior.prototype, {
     onValueChanged: { value: function(container){
       SLIDERS.HorizontalSliderBehavior.prototype.onValueChanged.call(this, container);
       trace("Brightness Value is: " + this.data.value + "\n");
+      currentBrightness = this.data.value.toFixed(2);
+      application.invoke(new Message("/sendNewBrightness"));
       decVal = Math.round(this.data.value*2.55);
       //trace("decVal is: " + decVal + "\n");
       hexVal = decVal.toString(16);
@@ -454,9 +471,11 @@ var ApplicationBehavior = function(application, data, context) {
 }
 ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototype, {
         onDisplayed:  { value: function(application) {
+        		application.shared = true;
                 application.discover("clarity_pin.app");
         }},
         onQuit:  { value: function(application) {
+        		application.shared = false;
                 application.forget("clarity_pin.app");
         }},
         doErase: { value: function(application) {
