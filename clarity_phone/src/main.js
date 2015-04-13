@@ -14,6 +14,8 @@ var SWITCHES = require('controls/switch');
 ///////////////////
 // Device Handling
 ///////////////////
+
+var deviceURL = "";
  
 Handler.bind("/discover", Behavior({
         onInvoke: function(handler, message){
@@ -137,7 +139,9 @@ var hourLabel = new Label({top: 150, left:133,height:50, string:"0" + hour, styl
 var hourIncreaseTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
                 if(hour < 24) {
-                    content.invoke(new Message(deviceURL + "hourUp"), Message.JSON);
+                    if(deviceURL != "") {
+                        content.invoke(new Message(deviceURL + "hourUp"), Message.JSON);
+                    }
                         hour++;
                         if(hour < 10) {
                                 hourLabel.string = "0" + hour;
@@ -150,7 +154,9 @@ var hourIncreaseTap = Object.create(Behavior.prototype,{
 var hourDecreaseTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
                 if(hour > 1) {
-                    content.invoke(new Message(deviceURL + "hourDown"), Message.JSON);
+                    if(deviceURL != "") {
+                        content.invoke(new Message(deviceURL + "hourDown"), Message.JSON);
+                    }
                         hour--;
                         hourLabel.string = hour;
                         if(hour < 10) {
@@ -179,7 +185,9 @@ var minuteLabel = new Label({top: 150, left:223,height:50, string:"00", style: c
 var minuteIncreaseTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
                 if(minute < 59) {
-                    content.invoke(new Message(deviceURL + "minuteUp"), Message.JSON);
+                    if(deviceURL != "") {
+                        content.invoke(new Message(deviceURL + "minuteUp"), Message.JSON);
+                    }
                         minute++;
                         if(minute < 10) {
                                 minuteLabel.string = "0" + minute;
@@ -192,7 +200,9 @@ var minuteIncreaseTap = Object.create(Behavior.prototype,{
 var minuteDecreaseTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
                 if(minute > 0) {
-                    content.invoke(new Message(deviceURL + "minuteDown"), Message.JSON);
+                    if(deviceURL != "") {
+                        content.invoke(new Message(deviceURL + "minuteDown"), Message.JSON);
+                    }
                         minute--;
                         minuteLabel.string = minute;
                         if(minute < 10) {
