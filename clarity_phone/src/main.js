@@ -29,16 +29,16 @@ Handler.bind("/forget", Behavior({
         }
 }));
  
-var connectionApplicationBehavior = Behavior.template({
-        onDisplayed: function(application) {
-        		application.shared = true;
-                application.discover("clarity_pin.app");
-        },
-        onQuit: function(application) {
-        		application.shared = false;
-                application.forget("clarity_pin.app");
-        },
-})
+//var connectionApplicationBehavior = Behavior.template({
+//        onDisplayed: function(application) {
+//        		application.shared = true;
+//                application.discover("clarity_pin.app");
+//        },
+//        onQuit: function(application) {
+//        		application.shared = false;
+//                application.forget("clarity_pin.app");
+//        },
+//})
  
 //////////////////////////
  
@@ -273,33 +273,32 @@ var contactsStyle = new Style( { font:"30px bold", color:"black" } );
  
 var contactsTitleLabel = new Label({top:10, left:160, height:20, string:"Contacts", style: contactsTitleStyle});
 
-var data = this.data = {
-        color: "black",
-        components: {r:0, g:0, b:0},
-        thickness: 10,
-};
+//var data = this.data = {
+//        color: "black",
+//        components: {r:0, g:0, b:0},
+//        thickness: 10,
+//};
 
 //drawScreen = Screen(data);
 var drawTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
         mainContainer.remove(mainContainer.last);
-        mainContainer.add(Screen(data));
+        mainContainer.add(new Screen(model.data));
     }}
 });
  
 
 var yoTapWithConsent = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
-    	content.invoke(new Message("YO!"), Message.JSON);
+    	content.invoke(new Message(deviceURL + "YO!"), Message.JSON);
     }}
 });
 
-var alexLabel = new Label({top:25, left:60, height:30, string:"Alex", style: contactsStyle, behavior: yoTapWithConsent});
-var andersLabel = new Label({top:75, left:60, height:30, string:"Anders", style: contactsStyle, behavior: yoTapWithConsent});
-var jennyLabel = new Label({top:125, left:60, height:30, string:"Jenny", style: contactsStyle, behavior: yoTapWithConsent});
-var johnLabel = new Label({top:175, left:60, height:30, string:"John", style: contactsStyle, behavior: yoTapWithConsent});
-var mironLabel = new Label({top:225, left:60, height:30, string:"Miron", style: contactsStyle, behavior: yoTapWithConsent});
-
+var alexLabel = new Label({top:25, left:60, height:30, string:"Alex", style: contactsStyle, active: true, behavior: yoTapWithConsent});
+var andersLabel = new Label({top:75, left:60, height:30, string:"Anders", style: contactsStyle, active: true, behavior: yoTapWithConsent});
+var jennyLabel = new Label({top:125, left:60, height:30, string:"Jenny", style: contactsStyle, active: true, behavior: yoTapWithConsent});
+var johnLabel = new Label({top:175, left:60, height:30, string:"John", style: contactsStyle, active: true, behavior: yoTapWithConsent});
+var mironLabel = new Label({top:225, left:60, height:30, string:"Miron", style: contactsStyle, active: true, behavior: yoTapWithConsent});
  
 var contactsTitleContainer = new Container({
         top:0, bottom: 370, height: 20, width:400,
@@ -363,7 +362,7 @@ var mainContainer = new Container({
                 alarmTabImage,
                 yoTabImage,
                 drawTabImage,
-                brightnessContainer
+                //brightnessContainer
         ]
 });
  
@@ -454,6 +453,12 @@ var ApplicationBehavior = function(application, data, context) {
         MODEL.ApplicationBehavior.call(this, application, data, context);
 }
 ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototype, {
+        onDisplayed:  { value: function(application) {
+                application.discover("clarity_pin.app");
+        }},
+        onQuit:  { value: function(application) {
+                application.forget("clarity_pin.app");
+        }},
         doErase: { value: function(application) {
                 var canvas = this.data.CANVAS;
                 canvas.stop();
@@ -505,7 +510,9 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                 this.replayStack = [];
                 this.replayIndex = 0;
                 this.replayFlag = false;
+                var drawScreen = this.drawScreen = new Screen(data);
                 //application.add(new Screen(data));
+                mainContainer.add(drawScreen);
         }},
         onThicknessChanged: { value: function() {
                 var data = this.data;
@@ -824,6 +831,6 @@ MenuTransition.prototype = Object.create(Transition.prototype, {
  
  
 ///////////////////////////////////////////////////////////////////////////////
-application.behavior = new connectionApplicationBehavior();
+//application.behavior = new connectionApplicationBehavior();
  
 application.add(mainContainer);

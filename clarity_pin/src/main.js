@@ -1,16 +1,18 @@
 // KPR Script file
 
 var whiteSkin = new Skin( { fill:"white" } );
+var redSkin = new Skin( { fill:"red" } );
 var labelStyle = new Style( { font: "bold 24px", color:"black" } );
+var bigLabelStyle = new Style( { font: "bold 48px", color:"black" } );
 
 var ApplicationBehavior = Behavior.template({
 	onLaunch: function(application) {
 		application.shared = true;
-		application.discover("clarity_phone.app");
+		//application.discover("clarity_phone.app");
 	},
 	onQuit: function(application) {
 		application.shared = false;
-		application.forget("clarity_phone.app");
+		//application.forget("clarity_phone.app");
 	},
 })
 
@@ -65,11 +67,50 @@ Handler.bind("/alarmSwitch", Behavior({
 	}
 }));
 
+Handler.bind("/YO!", {
+	onInvoke: function(handler, message){
+	    if (yoThere == 1) {
+	        mainContainer.remove(YoBox);
+	        yoThere = 0;
+	    }
+	    mainContainer.add(YoBox);
+	    yoThere = 1;
+		message.status = 200;
+	    handler.invoke(new Message("/delay"));
+	}
+});
+
+Handler.bind("/delay", { // delay for Yo feature
+    onInvoke: function(handler, message){
+        handler.wait(2000); //will call onComplete after 2 seconds
+    },
+    onComplete: function(handler, message){
+        handler.invoke(new Message("/removeYo"));
+    }
+});
+
+Handler.bind("/removeYo", Behavior({
+	onInvoke: function(handler, message){
+	    if (yoThere == 1) {
+	        mainContainer.remove(YoBox);
+	        yoThere = 0;
+	    }
+	}
+}));
+
+var YoBox = new Container({
+    left: 100, right: 100, top: 80, bottom: 80, skin: redSkin,
+    contents: [
+        new Label({left:0, right:0, top:0, bottom:0, string:"YO!", style: bigLabelStyle}),
+    ],
+});
+
+
 // hardware simulates the window, pin input brightness is toned down as specified by "brightnessLevel" setting
 // user control of brightnessLevel not yet implemented
-var mainContainer = Container.template(function($) { return { left: 0, right: 0, top: 0, bottom: 0,
-    behavior: Object.create((mainContainer.behavior).prototype), skin: whiteSkin }});
-mainContainer.behavior = Behavior.template({
+var mainContainerObj = Container.template(function($) { return { left: 0, right: 0, top: 0, bottom: 0,
+    behavior: Object.create((mainContainerObj.behavior).prototype), skin: whiteSkin }});
+mainContainerObj.behavior = Behavior.template({
 	onValueChanged: function(container,result) {
 	    percentage = brightnessLevel/(100*result.brightness);
 	    if (percentage >= 1) {
@@ -117,6 +158,8 @@ hour = 1;
 minute = 0;
 alarm = 1;
 brightnessLevel = 50;
-application.invoke( new MessageWithObject( "pins:/analogSensor/read?repeat=on&callback=/newValue&interval=20" ) );
+yoThere = 0; // is the yo box already there ??
+application.invoke( new MessageWithObject( "pins:/analogSensor/read?repeat=on&callback=/newValue&interval=5000" ) );
 application.behavior = new ApplicationBehavior();
-application.add(new mainContainer());
+mainContainer = new mainContainerObj();
+application.add(mainContainer);
