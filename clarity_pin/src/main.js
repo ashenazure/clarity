@@ -1,9 +1,11 @@
 // KPR Script file
 
 var whiteSkin = new Skin( { fill:"white" } );
+var blackSkin = new Skin( { fill:"black" } );
 var redSkin = new Skin( { fill:"red" } );
 var labelStyle = new Style( { font: "bold 24px", color:"black" } );
 var bigLabelStyle = new Style( { font: "bold 48px", color:"black" } );
+var timeStyle = new Style({ color: 'black', font: 'bold 64px', horizontal: 'center', vertical: 'middle', });
 
 var ApplicationBehavior = Behavior.template({
 	onLaunch: function(application) {
@@ -18,7 +20,7 @@ var ApplicationBehavior = Behavior.template({
 
 var brightnessBox = new Container({
     width:300, height:400,
-    skin:whiteSkin,
+    skin:whiteSkin
 });
 
 var brightnessContainer = new Container({
@@ -27,6 +29,20 @@ var brightnessContainer = new Container({
         name: "container",
         contents:[
                 brightnessBox
+        ]
+});
+
+var alarmBox = new Container({
+    width:300, height:400,
+    skin:blackSkin
+});
+
+var alarmContainer = new Container({
+		top:0,
+        skin:whiteSkin,
+        name: "container",
+        contents:[
+                alarmBox
         ]
 });
 
@@ -72,6 +88,33 @@ Handler.bind("/requestBrightness", Behavior({
 	}
 }));
 
+
+Handler.bind("/time", Object.create(Behavior.prototype, {
+	onInvoke: { value: 
+//@line 37
+		function(handler, message) {
+			application.distribute( "onTimeUpdated" );
+			handler.invoke( new Message( "/timeDelay?duration=500" ) );
+		},
+	},
+}));
+Handler.bind("/timeDelay", Object.create(Behavior.prototype, {
+	onInvoke: { value: 
+//@line 46
+		function(handler, message) {
+			var query = parseQuery( message.query );
+			var duration = query.duration;
+			handler.wait( duration )
+		},
+	},
+	onComplete: { value: 
+//@line 51
+		function(handler, message) {
+			handler.invoke( new Message( "/time" ) );
+		},
+	},
+}));
+
 Handler.bind("/hourUp", Behavior({
 	onInvoke: function(handler, message){
 	    hour += 1;
@@ -108,10 +151,27 @@ Handler.bind("/minuteDown", Behavior({
 	}
 }));
 
+var alarmScreenCalled = false;
+Handler.bind("/alarmScreen", Behavior({
+	onInvoke: function(handler, message){
+		if (!alarmScreenCalled) {
+			mainContainer.add(alarmContainer);
+			alarmScreenCalled = true;
+		}
+	}
+}));
+
 Handler.bind("/alarmSwitch", Behavior({
 	onInvoke: function(handler, message){
 	    alarm = (alarm + 1) % 2;
 	    trace("alarm: " + alarm + "\n");
+	    if(alarm == 0) {
+	    	mainContainer.remove(alarmContainer);
+	    	alarmScreenCalled = false;
+	    } else {
+	    	mainContainer.add(alarmContainer);
+	    	alarmScreenCalled = true;
+	    }
 		message.responseText = JSON.stringify( { alarm: alarm } );
 		message.status = 200;
 	}
@@ -156,12 +216,50 @@ var YoBox = new Container({
     ],
 });
 
-
+var MenuTransition = function() {
+        Transition.call(this, 5000);
+}
+MenuTransition.prototype = Object.create(Transition.prototype, {
+        onBegin: { value: function(screen, container, delta) {
+                var toolLayer = this.toolLayer = new Layer({ alpha:true });
+                toolLayer.attach(container.first);
+                var menuLayer = this.menuLayer = new Layer({ alpha:true });
+                menuLayer.attach(container.last);
+                this.delta = delta;
+        }},
+        onEnd: { value: function(screen, container, delta) {
+                this.menuLayer.detach();
+                this.toolLayer.detach();
+                container.moveBy(delta, 0);
+        }},
+        onStep: { value: function(fraction) {
+                fraction = Math.quadEaseOut(fraction);
+                this.menuLayer.translation = this.toolLayer.translation = { y: -this.delta * fraction };
+        }}
+});
+ 
 // hardware simulates the window, pin input brightness is toned down as specified by "brightnessLevel" setting
 // user control of brightnessLevel not yet implemented
 var mainContainerObj = Container.template(function($) { return { left: 0, right: 0, top: 0, bottom: 0,
     behavior: Object.create((mainContainerObj.behavior).prototype), skin: whiteSkin }});
 mainContainerObj.behavior = Behavior.template({
+	onCreate: function(container, data) {
+		container.invoke( new Message( "/time" ) );
+	},
+	onTimeUpdated: function(container) {
+		var date = new Date();
+		var hours = String( date.getHours() );
+		var minutes = String( date.getMinutes() );
+		var seconds = String( date.getSeconds() );
+		if ( 1 == minutes.length )
+			minutes = '0' + minutes;
+		if ( 1 == seconds.length )
+			seconds = '0' + seconds;
+		if(hours == hour && minutes == minute && alarm == 1 && seconds == 0) {
+			//ANIMATION HERE
+			container.run(new MenuTransition, alarmContainer, alarmContainer.last.height - 4);
+		}
+	},
 	onValueChanged: function(container,result) {
 	    percentage = brightnessLevel/(100*result.brightness);
 	    if (percentage >= 1) {

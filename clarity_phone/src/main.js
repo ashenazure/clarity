@@ -194,6 +194,7 @@ var hourDownButton = new Picture({
 });
 var alarmTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
+    	application.invoke(new Message(deviceURL + "alarmScreen"), Message.JSON);
         mainContainer.remove(mainContainer.last);
         mainContainer.add(alarmContainer);
     }}
