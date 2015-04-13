@@ -280,6 +280,7 @@ var data = this.data = {
 //drawScreen = Screen(data);
 var drawTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
+        mainContainer.remove(mainContainer.last);
         mainContainer.add(Screen(data));
     }}
 });
