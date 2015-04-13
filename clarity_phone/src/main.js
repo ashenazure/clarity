@@ -133,7 +133,7 @@ var alarmTap = Object.create(Behavior.prototype,{
     }}
 });
 var alarmStyle = new Style( { font: "bold 40px", color:"gray" } );
-var alarmLabel = new Label({top: 30, left:0, right: 0, height:60, string:"Alarm", style: alarmStyle});
+var alarmLabel = new Label({top: 30, left:150, right: 0, height:60, string:"Alarm", style: alarmStyle});
  
 var clockStyle = new Style( { font: "bold 50px", color:"black" } );
 var hour = 1;
@@ -527,7 +527,8 @@ var model = application.behavior = new ApplicationBehavior(application);
 */
  
 var Screen = Container.template(function($) { return {
-        top:65, bottom: 60, height: 400, width:400, active:true,
+        //top:65, bottom: 60, height: 400, width:400, active:true,
+        top:65, bottom:60, left: 0, right:0, active:true,
         contents: [
                 Canvas($, { anchor:"CANVAS", left:0, right:0, top:0, bottom:0, active:true,
                         behavior: Object.create(Behavior.prototype, {
@@ -575,16 +576,16 @@ var Screen = Container.template(function($) { return {
                                 }},
                         }),
                 }),
-                Container($, { left:0, top:0, active:true,
-                        behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
-                                onTap: { value: function(container) {
-                                        application.invoke(new Message("xkpr://shell/close?id=" + application.id));
-                                }},
-                        }),
-                        contents: [
-                                Content($, { skin:toolsSkin, variant:0 }),
-                        ]
-                }),
+                //Container($, { left:0, top:0, active:true,
+                //        behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
+                //                onTap: { value: function(container) {
+                //                        application.invoke(new Message("xkpr://shell/close?id=" + application.id));
+                //                }},
+                //        }),
+                //        contents: [
+                //                Content($, { skin:toolsSkin, variant:0 }),
+                //        ]
+                //}),
                 Container($, { width:32, right:4, height:32, top:0, active:true,
                         behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
                                 onDisplayed: { value: function(container) {
