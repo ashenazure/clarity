@@ -29,11 +29,13 @@ Handler.bind("/forget", Behavior({
         }
 }));
  
-var ApplicationBehavior = Behavior.template({
+var connectionApplicationBehavior = Behavior.template({
         onDisplayed: function(application) {
+        		application.shared = true;
                 application.discover("clarity_pin.app");
         },
         onQuit: function(application) {
+        		application.shared = false;
                 application.forget("clarity_pin.app");
         },
 })
@@ -822,6 +824,6 @@ MenuTransition.prototype = Object.create(Transition.prototype, {
  
  
 ///////////////////////////////////////////////////////////////////////////////
-//application.behavior = new ApplicationBehavior();
+application.behavior = new connectionApplicationBehavior();
  
 application.add(mainContainer);

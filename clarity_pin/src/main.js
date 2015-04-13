@@ -6,9 +6,11 @@ var labelStyle = new Style( { font: "bold 24px", color:"black" } );
 var ApplicationBehavior = Behavior.template({
 	onLaunch: function(application) {
 		application.shared = true;
+		application.discover("clarity_phone.app");
 	},
 	onQuit: function(application) {
 		application.shared = false;
+		application.forget("clarity_phone.app");
 	},
 })
 
