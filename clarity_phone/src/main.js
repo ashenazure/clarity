@@ -253,7 +253,7 @@ var alarmSwitchTemplate = SWITCHES.SwitchButton.template(function($){ return{
   }}})
 }});
  
-var alarmSwitch = new alarmSwitchTemplate({ value: 1 });
+var alarmSwitch = new alarmSwitchTemplate({ value: 0 });
 var alarmContainer = new Container({
         top:65, bottom: 60, height: 400, width:400,
         skin:greySkin,

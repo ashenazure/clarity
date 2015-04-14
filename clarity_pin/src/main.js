@@ -154,9 +154,12 @@ Handler.bind("/minuteDown", Behavior({
 var alarmScreenCalled = false;
 Handler.bind("/alarmScreen", Behavior({
 	onInvoke: function(handler, message){
-		if (!alarmScreenCalled) {
-			mainContainer.add(alarmContainer);
-			alarmScreenCalled = true;
+		//if (!alarmScreenCalled) {
+		if (alarm == 1) {
+		    if (!alarmScreenCalled) {
+			    mainContainer.add(alarmContainer);
+			    alarmScreenCalled = true;
+			}
 		}
 	}
 }));
@@ -166,11 +169,15 @@ Handler.bind("/alarmSwitch", Behavior({
 	    alarm = (alarm + 1) % 2;
 	    trace("alarm: " + alarm + "\n");
 	    if(alarm == 0) {
-	    	mainContainer.remove(alarmContainer);
-	    	alarmScreenCalled = false;
+	        if (alarmScreenCalled) {
+	    	    mainContainer.remove(alarmContainer);
+	    	    alarmScreenCalled = false;
+	    	}
 	    } else {
-	    	mainContainer.add(alarmContainer);
-	    	alarmScreenCalled = true;
+	        if (!alarmScreenCalled) {
+	    	    mainContainer.add(alarmContainer);
+	    	    alarmScreenCalled = true;
+	    	}
 	    }
 		message.responseText = JSON.stringify( { alarm: alarm } );
 		message.status = 200;
@@ -305,7 +312,7 @@ application.invoke( new MessageWithObject( "pins:configure",{
 
 hour = 1;
 minute = 0;
-alarm = 1;
+alarm = 0;
 brightnessLevel = 50;
 yoThere = 0; // is the yo box already there ??
 application.invoke( new MessageWithObject( "pins:/analogSensor/read?repeat=on&callback=/newValue&interval=5000" ) );
