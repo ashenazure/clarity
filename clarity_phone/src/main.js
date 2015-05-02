@@ -43,6 +43,22 @@ Handler.bind("/currentBrightness", Behavior({
 		message.status = 200;
 	}
 }));
+
+/*Handler.bind("/getMove", {
+	onInvoke: function(handler, message){
+	    trace("you've reached me");
+	    trace(currX);
+	    message.responseText = JSON.stringify( { x: currX, y: currY, color: currColor, thickness: currThickness } );
+	    message.status = 200;
+    }
+});*/
+
+Handler.bind("/getLine", {
+	onInvoke: function(handler, message){
+	    message.responseText = JSON.stringify( {x: currX, y: currY } );
+	    message.status = 200;
+	}
+});
  
 //var connectionApplicationBehavior = Behavior.template({
 //        onDisplayed: function(application) {
@@ -121,6 +137,8 @@ var BrightnessSlider = SLIDERS.HorizontalSlider.template(function($){ return{
       brightnessContainer.add(brightnessBox);
   }}})
 }});
+var blackBox = new Container({ left:40, height:10, top:55, width:10, skin: new Skin( {fill:"black"} ) });
+var whiteBox = new Container({ right:40, height:10, top:55, width:10, skin: new Skin( {fill:"#F0F0F0"} ) });
 var slider = new BrightnessSlider({ min:0, max:100, value:50,  });
 var brightnessContainer = new Container({
         top:65, bottom: 60, height: 400, width:400,
@@ -128,7 +146,9 @@ var brightnessContainer = new Container({
         name: "container",
         contents:[
                 slider,
-                brightnessBox
+                brightnessBox,
+                blackBox,
+                whiteBox,
         ]
 });
  
@@ -301,7 +321,8 @@ var contactsTitleLabel = new Label({top:10, left:160, height:20, string:"Contact
 var drawTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
         mainContainer.remove(mainContainer.last);
-        mainContainer.add(new Screen(model.data));
+        //mainContainer.add(new Screen(model.data));
+        mainContainer.add(model.drawScreen);
     }}
 });
  
@@ -311,6 +332,37 @@ var yoTapWithConsent = Object.create(Behavior.prototype,{
     	content.invoke(new Message(deviceURL + "YO!"), Message.JSON);
     }}
 });
+
+var deliveredBox = new Label({top:25, right:60, height:30, string:"Delivered!", style: contactsStyle});
+Handler.bind("/YoSent", Behavior({
+	onInvoke: function(handler, message){
+	    if (yoThere == 1) {
+	        contactsContainer.remove(deliveredBox);
+	        yoThere = 0;
+	    }
+	    contactsContainer.add(deliveredBox);
+	    yoThere = 1;
+	    handler.invoke(new Message("/delay"));
+	}
+}));
+
+Handler.bind("/delay", { // delay for Yo feature
+    onInvoke: function(handler, message){
+        handler.wait(2000); //will call onComplete after 2 seconds
+    },
+    onComplete: function(handler, message){
+        handler.invoke(new Message("/removeYo"));
+    }
+});
+
+Handler.bind("/removeYo", Behavior({
+	onInvoke: function(handler, message){
+	    if (yoThere == 1) {
+	        contactsContainer.remove(deliveredBox);
+	        yoThere = 0;
+	    }
+	}
+}));
 
 var alexLabel = new Label({top:25, left:60, height:30, string:"Alex", style: contactsStyle, active: true, behavior: yoTapWithConsent});
 var andersLabel = new Label({top:75, left:60, height:30, string:"Anders", style: contactsStyle, active: true, behavior: yoTapWithConsent});
@@ -515,6 +567,10 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                 }
                 application.distribute("onModelChanged");
         }},
+        /*doUpdate: { value: function() {
+            	trace("pressed\n");
+    			application.invoke(new Message(deviceURL + "updateDrawing"), Message.JSON);
+    	}},*/
         onColorChanged: { value: function() {
                 var data = this.data;
                 var components = data.components;
@@ -545,18 +601,18 @@ var model = application.behavior = new ApplicationBehavior(application);
 /*
         SCREEN
 */
- 
+
 var Screen = Container.template(function($) { return {
         //top:65, bottom: 60, height: 400, width:400, active:true,
         top:65, bottom:60, left: 0, right:0, active:true,
         contents: [
                 Canvas($, { anchor:"CANVAS", left:0, right:0, top:0, bottom:0, active:true,
                         behavior: Object.create(Behavior.prototype, {
-                                onDisplaying: { value: function(canvas) {
-                                        var ctx = canvas.getContext("2d");
-                                        ctx.fillStyle = "white"
-                                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                                }},
+                                //onDisplaying: { value: function(canvas) {
+                                //        var ctx = canvas.getContext("2d");
+                                //        ctx.fillStyle = "white"
+                                //        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                //}},
                                 onFinished: { value: function(canvas) {
                                         if (model.replayIndex >= model.replayStack.length) {
                                                 var ctx = canvas.getContext("2d");
@@ -583,6 +639,11 @@ var Screen = Container.template(function($) { return {
                                         ctx.beginPath();
                                         ctx.moveTo(x, y);
                                         model.replayStack.push(new ReplayMove(x, y));
+                                        /*currX = x;
+                                        currY = y;
+                                        currColor = "rgb(" + model.data.components.r + "," + model.data.components.g + "," + model.data.components.b + ")";
+                                        currThickness = model.data.thickness;
+                                        application.invoke(new Message(deviceURL + "moveUpdate"), Message.JSON);*/                                        
                                 }},
                                 onTouchMoved: { value: function(canvas, id, x, y, ticks) {
                                         if (model.replayFlag)
@@ -593,6 +654,9 @@ var Screen = Container.template(function($) { return {
                                         ctx.lineTo(x, y);
                                         ctx.stroke();
                                         model.replayStack.push(new ReplayLine(x, y));
+                                        /*currX = x;
+                                        currY = y;
+                                        application.invoke(new Message(deviceURL + "lineUpdate"), Message.JSON);*/
                                 }},
                         }),
                 }),
@@ -609,15 +673,16 @@ var Screen = Container.template(function($) { return {
                 Container($, { width:32, right:4, height:32, top:0, active:true,
                         behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
                                 onDisplayed: { value: function(container) {
-                                        this.menuVisible = false;
-                                        this.onTap(container);
+                                        if (!isMenuVisible) {
+                                            this.onTap(container);
+                                        }
                                 }},
                                 onTap: { value: function(container) {
-                                        if (this.menuVisible)
+                                        if (isMenuVisible)
                                                 container.container.run(new MenuTransition, container, container.last.width - 4);
                                         else
                                                 container.container.run(new MenuTransition, container, 4 - container.last.width);
-                                        this.menuVisible = !this.menuVisible;
+                                        isMenuVisible = !isMenuVisible;
                                 }},
                         }),
                         contents: [
@@ -702,6 +767,17 @@ var Menu = Column.template(function($) { return {
                         }),
                         contents: [
                                 Label($, { left:0, right:0, style:commandStyle, string:"Play" }),
+                        ]
+                }),
+                Line($, {
+                        left:0, right:0, height:44, active:true,
+                        behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
+                                onTap: { value: function(line) {
+                                        line.bubble("doUpdate")
+                                }},
+                        }),
+                        contents: [
+                                Label($, { left:0, right:0, style:commandStyle, string:"Update" }),
                         ]
                 }),
         ]
@@ -853,5 +929,11 @@ MenuTransition.prototype = Object.create(Transition.prototype, {
  
 ///////////////////////////////////////////////////////////////////////////////
 //application.behavior = new connectionApplicationBehavior();
- 
+
+isMenuVisible = false;
+currX = 0;
+currY = 0;
+currColor = "";
+currThickness = 0;
+yoThere = 0;
 application.add(mainContainer);

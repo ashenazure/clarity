@@ -7,16 +7,61 @@ var labelStyle = new Style( { font: "bold 24px", color:"black" } );
 var bigLabelStyle = new Style( { font: "bold 48px", color:"black" } );
 var timeStyle = new Style({ color: 'black', font: 'bold 64px', horizontal: 'center', vertical: 'middle', });
 
-var ApplicationBehavior = Behavior.template({
-	onLaunch: function(application) {
-		application.shared = true;
-		application.discover("clarity_phone.app");
-	},
-	onQuit: function(application) {
-		application.shared = false;
-		application.forget("clarity_phone.app");
-	},
+// Stuff for draw
+var MODEL = require("mobile/model");
+var ReplayLine = function(x, y) {
+        this.x = x;
+        this.y = y;
+}
+ReplayLine.prototype.replay = function(canvas) {
+        var ctx = canvas.getContext("2d");
+        ctx.lineTo(this.x, this.y);
+        ctx.stroke();
+}
+var ReplayMove = function(x, y, color, thickness) {
+        this.color = color
+        this.thickness = thickness;
+        this.x = x;
+        this.y = y;
+}
+ReplayMove.prototype.replay = function(canvas) {
+        var ctx = canvas.getContext("2d");
+        ctx.lineWidth = thickness;
+        ctx.strokeStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+}
+
+var ApplicationBehavior = function(application, data, context) {
+        MODEL.ApplicationBehavior.call(this, application, data, context);
+}
+
+ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototype, {
+		onLaunch: { value: function() {
+				application.shared = true;
+				application.discover("clarity_phone.app");
+                this.drawStack = [];
+                //var data = this.data = {}
+        }},
+		onQuit: function(application) {
+				application.shared = false;
+				application.forget("clarity_phone.app");
+		},
+		onUpdate: { value: function(application) {
+                var canvas = currentDrawing;
+                var drawStack = this.drawStack;
+                var c = drawStack.length;
+                var i = 0;
+                while (i < c) {
+                        drawStack[i].replay(canvas);
+                        i++;
+                }
+		}},
 })
+
+var model = application.behavior = new ApplicationBehavior(application);
+
+// end draw stuff
 
 var brightnessBox = new Container({
     width:300, height:400,
@@ -28,7 +73,7 @@ var brightnessContainer = new Container({
         skin:whiteSkin,
         name: "container",
         contents:[
-                brightnessBox
+                //brightnessBox
         ]
 });
 
@@ -66,13 +111,47 @@ Handler.bind("/forget", Behavior({
         }
 }));
 
+Handler.bind("/lineUpdate", {
+	onInvoke: function(handler, message){
+	    handler.invoke(new Message(deviceURL + "getLine"), Message.JSON);
+	},
+	onComplete: function(handler, message, result) {
+	    model.drawStack.push(new ReplayLine(result.x, result.y));
+	}
+});
+
+Handler.bind("/moveUpdate", {
+	onInvoke: function(handler, message){
+	    trace("updating move");
+	    handler.invoke(new Message(deviceURL + "getMove"), Message.JSON);
+	},
+	onComplete: function(handler, message, result) {
+	    trace("finished updating");
+	    trace("result " + result.thickness);
+	    model.drawStack.push(new ReplayMove(result.x, result.y, result.color, result.thickness));
+	}
+});
+
+Handler.bind("/eraseDrawing", {
+    onInvoke: function(handler, message){
+        model.drawStack = [];
+    }
+});
+
+Handler.bind("/updateDrawing", {
+    onInvoke: function(handler, message){
+        application.distribute("onUpdate");
+    }
+});
+
 Handler.bind("/requestBrightness", Behavior({
 	onInvoke: function(handler, message){
 		handler.invoke(new Message(deviceURL + "currentBrightness"), Message.JSON);
 	},
 	onComplete: function(handler, message, json) {
 		if (json) {
-			trace(json.brightness);
+		    brightnessLevel = json.brightness;
+			/*trace(json.brightness);
       		decVal = Math.round(json.brightness*2.55);
       		//trace("decVal is: " + decVal + "\n");
       		hexVal = decVal.toString(16);
@@ -83,7 +162,7 @@ Handler.bind("/requestBrightness", Behavior({
       		//trace("hexVal is: " + hexVal + "\n");
       		newFill = "#" + hexVal + hexVal + hexVal;
       		brightnessBox.skin = new Skin({fill:newFill});
-      		brightnessContainer.add(brightnessBox);
+      		brightnessContainer.add(brightnessBox);*/
 		}	
 	}
 }));
@@ -194,6 +273,7 @@ Handler.bind("/YO!", {
 	    yoThere = 1;
 		message.status = 200;
 	    handler.invoke(new Message("/delay"));
+	    handler.invoke(new Message(deviceURL + "YoSent"), Message.JSON);
 	}
 });
 
@@ -215,6 +295,7 @@ Handler.bind("/removeYo", Behavior({
 	}
 }));
 
+////////////////////////////////
 
 var YoBox = new Container({
     left: 100, right: 100, top: 80, bottom: 80, skin: redSkin,
@@ -316,7 +397,7 @@ alarm = 0;
 brightnessLevel = 50;
 yoThere = 0; // is the yo box already there ??
 application.invoke( new MessageWithObject( "pins:/analogSensor/read?repeat=on&callback=/newValue&interval=5000" ) );
-application.behavior = new ApplicationBehavior();
+//application.behavior = new ApplicationBehavior();
 mainContainer = new mainContainerObj();
 application.add(mainContainer);
-mainContainer.add(brightnessContainer);
+//mainContainer.add(brightnessContainer);
