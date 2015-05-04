@@ -1,6 +1,7 @@
 // KPR Script file
 //Skins and theme
 var whiteSkin = new Skin( { fill:"white" } );
+var blackSkin = new Skin( { fill:"black" } );
 var tealSkin = new Skin ( { fill:"#65D9D3" } );
 var greySkin = new Skin( { fill:"#F6F6F6" } );
 var mediumGreySkin = new Skin( { fill: "#CCCCCC" } );
@@ -107,6 +108,38 @@ var arrowDownImageURL = mergeURI(application.url, "./assets/arrow_down_button.pn
 var brightnessBox = new Container({
     left:0, right:0, top:100, bottom:0,
     skin:whiteSkin,
+    contents:[
+    		new Container({left:38, width:5, top:0, bottom:0, skin:whiteSkin}),
+    		new Container({left:144, width:5, top:0, bottom:0, skin:whiteSkin}),
+    		new Container({left:250, width:5, top:0, bottom:0, skin:whiteSkin}),
+    		new Container({left:356, width:5, top:0, bottom:0, skin:whiteSkin}),
+    		new Container({left:0, right:0, top:100, height:5, skin:whiteSkin}),
+    		new Container({left:0, right:0, top:205, height:5, skin:whiteSkin}),
+    		new Container({left:143, width:1, top:0, height:100, skin:blackSkin}),
+    		new Container({left:143, width:1, top:105, height:100, skin:blackSkin}),
+    		new Container({left:143, width:1, top:210, height:100, skin:blackSkin}),
+    		new Container({left:149, width:1, top:0, height:100, skin:blackSkin}),
+    		new Container({left:149, width:1, top:105, height:100, skin:blackSkin}),
+    		new Container({left:149, width:1, top:210, height:100, skin:blackSkin}),
+    		new Container({left:249, width:1, top:0, height:100, skin:blackSkin}),
+    		new Container({left:249, width:1, top:105, height:100, skin:blackSkin}),
+    		new Container({left:249, width:1, top:210, height:100, skin:blackSkin}),
+    		new Container({left:255, width:1, top:0, height:100, skin:blackSkin}),
+    		new Container({left:255, width:1, top:105, height:100, skin:blackSkin}),
+    		new Container({left:255, width:1, top:210, height:100, skin:blackSkin}),
+    		new Container({left:43, width:101, top:99, height:1, skin:blackSkin}),
+    		new Container({left:43, width:101, top:105, height:1, skin:blackSkin}),
+    		new Container({left:43, width:101, top:204, height:1, skin:blackSkin}),
+    		new Container({left:43, width:101, top:210, height:1, skin:blackSkin}),
+    		new Container({left:149, width:101, top:99, height:1, skin:blackSkin}),
+    		new Container({left:149, width:101, top:105, height:1, skin:blackSkin}),
+    		new Container({left:149, width:101, top:204, height:1, skin:blackSkin}),
+    		new Container({left:149, width:101, top:210, height:1, skin:blackSkin}),
+    		new Container({left:255, width:101, top:99, height:1, skin:blackSkin}),
+    		new Container({left:255, width:101, top:105, height:1, skin:blackSkin}),
+    		new Container({left:255, width:101, top:204, height:1, skin:blackSkin}),
+    		new Container({left:255, width:101, top:210, height:1, skin:blackSkin}),
+    ]
 });
  
 var brightnessTap = Object.create(Behavior.prototype,{
