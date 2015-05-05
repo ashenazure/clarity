@@ -298,7 +298,7 @@ Handler.bind("/removeYo", Behavior({
 ////////////////////////////////
 
 var YoBox = new Container({
-    left: 100, right: 100, top: 80, bottom: 80, skin: redSkin,
+    left: 111, width: 99, top: 83, height: 75, skin: redSkin,
     contents: [
         new Label({left:0, right:0, top:0, bottom:0, string:"YO!", style: bigLabelStyle}),
     ],

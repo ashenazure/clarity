@@ -2,7 +2,9 @@
 //Skins and theme
 var whiteSkin = new Skin( { fill:"white" } );
 var blackSkin = new Skin( { fill:"black" } );
+var redSkin = new Skin( { fill:"red" } );
 var tealSkin = new Skin ( { fill:"#65D9D3" } );
+var blueSkin = new Skin( {fill:"blue"} );
 var greySkin = new Skin( { fill:"#F6F6F6" } );
 var mediumGreySkin = new Skin( { fill: "#CCCCCC" } );
 var darkGreySkin = new Skin( { fill:"#979797" });
@@ -366,14 +368,19 @@ var yoTapWithConsent = Object.create(Behavior.prototype,{
     }}
 });
 
-var deliveredBox = new Label({top:25, right:60, height:30, string:"Delivered!", style: contactsStyle});
+var deliveredLabel = new Label({top:35, left:40, height:30, string:"Delivered!", style: contactsStyle});
+var deliveredContainer = new Container({top:150, left:100, width:200, height:100, skin:redSkin,
+		contents:[
+				deliveredLabel
+		]
+});
 Handler.bind("/YoSent", Behavior({
 	onInvoke: function(handler, message){
 	    if (yoThere == 1) {
-	        contactsContainer.remove(deliveredBox);
+	        contactsContainer.remove(deliveredContainer);
 	        yoThere = 0;
 	    }
-	    contactsContainer.add(deliveredBox);
+	    contactsContainer.add(deliveredContainer);
 	    yoThere = 1;
 	    handler.invoke(new Message("/delay"));
 	}
@@ -391,23 +398,263 @@ Handler.bind("/delay", { // delay for Yo feature
 Handler.bind("/removeYo", Behavior({
 	onInvoke: function(handler, message){
 	    if (yoThere == 1) {
-	        contactsContainer.remove(deliveredBox);
+	        contactsContainer.remove(deliveredContainer);
 	        yoThere = 0;
 	    }
 	}
 }));
+
+
+var THEMESAMPLE = require('themes/sample/theme');
+var CONTROL = require('mobile/control');
+var KEYBOARD = require('mobile/keyboard');
+
+var nameInputSkin = new Skin({ borders: { left:2, right:2, top:2, bottom:2 }, stroke: 'gray',});
+var fieldStyle = new Style({ color: 'black', font: 'bold 24px', horizontal: 'left', vertical: 'middle', left: 5, right: 5, top: 5, bottom: 5, });
+var fieldHintStyle = new Style({ color: '#aaa', font: '24px', horizontal: 'left', vertical: 'middle', left: 5, right: 5, top: 5, bottom: 5, });
+var whiteSkin = new Skin({fill:"white"});
+              
+var MyField = Container.template(function($) { return { 
+  width: 220, top: $.top, height: 36, skin: nameInputSkin, contents: [
+    Scroller($, { 
+      left: 4, right: 4, top: 4, bottom: 4, active: true, 
+      behavior: Object.create(CONTROL.FieldScrollerBehavior.prototype), clip: true, contents: [
+        Label($, { 
+          left: 0, top: 0, bottom: 0, skin: THEMESAMPLE.fieldLabelSkin, style: fieldStyle, anchor: 'NAME',
+          editable: true, string: $.name,
+         	behavior: Object.create( CONTROL.FieldLabelBehavior.prototype, {
+         		onEdited: { value: function(label){
+         			var data = this.data;
+              		data.name = label.string;
+              		label.container.hint.visible = ( data.name.length == 0 );	
+         		}}
+         	}),
+         }),
+         Label($, {
+   			 	left:4, right:4, top:4, bottom:4, style:fieldHintStyle, string:$.hintName, name:"hint"
+         })
+      ]
+    })
+  ]
+}});
+
+var EditContainerTemplate = Container.template(function($) { return {
+  left: 75, width: 250, top: 50, height: 350, skin: whiteSkin, active: true,
+  behavior: Object.create(Container.prototype, {
+    onTouchEnded: { value: function(content){
+      KEYBOARD.hide();
+      content.focus();
+    }}
+  })
+}});
+
+var cancelButtonBehavior = Object.create(Behavior.prototype,{
+    onTouchEnded: {value: function(content){
+        mainContainer.last.remove(mainContainer.last.last);
+        mainContainer.last.last.skin = greySkin;
+    }}
+});
+
+var OKContainer = Container.template(function($) { return {
+  bottom:8, height:36, right:10, width:72, skin:blueSkin, active:true,
+  contents: [
+  	new Label({string:"OK", style:fieldStyle})
+  ],
+  behavior: Object.create(Container.prototype, {
+    onTouchEnded: { value: function(content){
+    	editing = false;
+    	if (fieldList[0].first.first.string != "") {
+    		userData[$.i].name = fieldList[0].first.first.string;
+    		userData[$.i].label.string = userData[$.i].name;
+    		var x = 0;
+    		userData[$.i].windows = [];
+    		while (x < userData[$.i].numWindows) {
+    			if (fieldList[x+1].first.first.string != "") {
+    				userData[$.i].windows.push(fieldList[x+1].first.first.string);
+    			}
+    			x++;
+    		}
+    		if (fieldList[x+1].first.first.string != "") {
+    			userData[$.i].windows.push(fieldList[x+1].first.first.string);
+    		}
+    		userData[$.i].numWindows = userData[$.i].windows.length;
+    	}
+    	mainContainer.last.remove(mainContainer.last.last);
+    	mainContainer.last.last.skin = greySkin;
+    }}
+  })
+}});
+
+var fieldList = [];
+
+var editContainer = Container.template(function($) { return {
+  top:$.top, right:60, height:30, width:30, skin: whiteSkin, active: true,
+  behavior: Object.create(Container.prototype, {
+    onTouchEnded: { value: function(content){
+    	if (!editing) {
+    		editing = true;
+    		var editBox = new EditContainerTemplate();
+        	mainContainer.last.last.skin = darkGreySkin;
+        	mainContainer.last.add(editBox);
+        	editBox.add(new Container({ bottom:8, height:36, left:10, width:72, skin:redSkin, active:true, behavior:cancelButtonBehavior,
+        		contents:[
+        				new Label({string:"Cancel", style:fieldStyle})
+        		]
+        	}));
+        	editBox.add(new OKContainer({i:$.index}));
+        	fieldList = [];
+        	var i = 0;
+        	var currTop = 10;
+        	var currHint = "Name...";
+        	var currField = new MyField({ top:currTop, name:$.name, hintName:currHint });
+        	fieldList.push(currField);
+        	editBox.add(currField);
+        	while (i < $.numWindows) {
+        	    currTop = currTop + 40;
+        	    j = i + 1;
+        	    currHint = "Window " + j + " ID..."
+        		currField = new MyField({ top:currTop, name:$.windows[i], hintName:currHint});
+        		fieldList.push(currField);
+        		editBox.add(currField);
+        		i++;
+        	}
+        	currField = new MyField({ top:currTop+40, name:"", hintName:"+ Add New Window"})
+        	fieldList.push(currField);
+        	editBox.add(currField);
+        }
+    }}
+  })
+}});
 
 var alexLabel = new Label({top:25, left:60, height:30, string:"Alex", style: contactsStyle, active: true, behavior: yoTapWithConsent});
 var andersLabel = new Label({top:75, left:60, height:30, string:"Anders", style: contactsStyle, active: true, behavior: yoTapWithConsent});
 var jennyLabel = new Label({top:125, left:60, height:30, string:"Jenny", style: contactsStyle, active: true, behavior: yoTapWithConsent});
 var johnLabel = new Label({top:175, left:60, height:30, string:"John", style: contactsStyle, active: true, behavior: yoTapWithConsent});
 var mironLabel = new Label({top:225, left:60, height:30, string:"Miron", style: contactsStyle, active: true, behavior: yoTapWithConsent});
- 
+
+var alexData = {
+	top:25,
+	name:"Alex",
+	index:0,
+	numWindows:2,
+	windows:["3FF246","3FF246"],
+	label:alexLabel,
+}
+
+var andersData = {
+	top:75,
+	name:"Anders",
+	index:1,
+	numWindows:4,
+	windows:["1","2","3","4"],
+	label:andersLabel,
+}
+
+var jennyData = {
+	top:125,
+	name:"Jenny",
+	index:2,
+	numWindows:1,
+	windows:["F2G2"],
+	label:jennyLabel,
+}
+
+var johnData = {
+	top:175,
+	name:"John",
+	index:3,
+	numWindows:1,
+	windows:["DFJ853"],
+	label:johnLabel,
+}
+
+var mironData = {
+	top:225,
+	name:"Miron",
+	index:4,
+	numWindows:1,
+	windows:["3342"],
+	label:mironLabel,
+}
+
+userData = [alexData, andersData, jennyData, johnData, mironData];
+
+var editURL = mergeURI(application.url, "./assets/edit.png");
+var plusURL = mergeURI(application.url, "./assets/plus.png");
+var editPic = new Picture({top:0, right:0, height:30, width:30, url:editURL});
+var alexEdit = new editContainer(alexData);
+alexEdit.add(new Picture({top:0, right:0, height:30, width:30, url:editURL}));
+var andersEdit = new editContainer(andersData);
+andersEdit.add(new Picture({top:0, right:0, height:30, width:30, url:editURL}));
+var jennyEdit = new editContainer(jennyData);
+jennyEdit.add(new Picture({top:0, right:0, height:30, width:30, url:editURL}));
+var johnEdit = new editContainer(johnData);
+johnEdit.add(new Picture({top:0, right:0, height:30, width:30, url:editURL}));
+var mironEdit = new editContainer(mironData);
+mironEdit.add(new Picture({top:0, right:0, height:30, width:30, url:editURL}));
+
+var OKButtonBehavior = Object.create(Behavior.prototype,{
+    onTouchEnded: {value: function(content){
+    	adding = false;
+    	if (fieldList[0].first.first.string != "") {
+    		YoTopIndex += 50
+    		YoUserIndex += 1
+    		userData.push({top:YoTopIndex, name:fieldList[0].first.first.string, index:YoUserIndex, numWindows:0, windows:[]});
+    		if (fieldList[1].first.first.string != "") {
+    			userData[YoUserIndex].numWindows = 1;
+    			userData[YoUserIndex].windows.push(fieldList[1].first.first.string);
+    		}
+    	}
+        mainContainer.last.remove(mainContainer.last.last);
+        mainContainer.last.last.skin = greySkin;
+        if (fieldList[0].first.first.string != "") {
+        	var newLabel = new Label({top:userData[YoUserIndex].top, left:60, height:30, string:userData[YoUserIndex].name, style: contactsStyle, active: true, behavior: yoTapWithConsent});
+        	contactsContainer.add(newLabel);
+        	var newEdit = new editContainer(userData[YoUserIndex]);
+        	newEdit.add(new Picture({top:0, right:0, height:30, width:30, url:editURL}));
+        	contactsContainer.add(newEdit);
+        	userData[YoUserIndex].label = newLabel;
+        }
+    }}
+});
+
+var plusButtonTap = Object.create(Behavior.prototype,{
+    onTouchEnded: {value: function(content){
+    	if ((YoUserIndex < 6) && (!adding)) {
+    		adding = true;
+        	var newContactsBox = new EditContainerTemplate();
+        	mainContainer.last.last.skin = darkGreySkin;
+        	mainContainer.last.add(newContactsBox);
+        	newContactsBox.add(new Container({ bottom:8, height:36, left:10, width:72, skin:redSkin, active:true, behavior:cancelButtonBehavior,
+        		contents:[
+        				new Label({string:"Cancel", style:fieldStyle})
+        		]
+        	}));
+        	newContactsBox.add(new Container({ bottom:8, height:36, right:10, width:72, skin:blueSkin, active:true, behavior:OKButtonBehavior,
+        		contents:[
+        				new Label({string:"OK", style:fieldStyle})
+        		]
+        	}));
+        	fieldList = [];
+        	var currField = new MyField({ top:10, name:"", hintName:"Name..." });
+        	fieldList.push(currField);
+        	newContactsBox.add(currField);
+        	currField = new MyField({ top:50, name:"", hintName:"Window 1 ID..." });
+        	fieldList.push(currField);
+        	newContactsBox.add(currField);
+        }
+    }}
+});
+
+var plusButton = new Container({top:5, bottom:5, left:310, width:30, skin:whiteSkin, active:true, behavior:plusButtonTap});
+plusButton.add(new Picture({top:0, right:0, height:30, width:30, url:plusURL}));
+
 var contactsTitleContainer = new Container({
         top:0, bottom: 370, height: 20, width:400,
         skin:mediumGreySkin,
         contents:[
-                contactsTitleLabel
+                contactsTitleLabel,
+                plusButton,
         ]
 });
  
@@ -416,10 +663,15 @@ var contactsContainer = new Container({
         skin:greySkin,
         contents:[
                 alexLabel,
+                alexEdit,
                 andersLabel,
+                andersEdit,
                 jennyLabel,
+                jennyEdit,
                 johnLabel,
-                mironLabel
+                johnEdit,
+                mironLabel,
+                mironEdit,
         ]
 });
  
@@ -964,6 +1216,10 @@ MenuTransition.prototype = Object.create(Transition.prototype, {
 //application.behavior = new connectionApplicationBehavior();
 
 isMenuVisible = false;
+var editing = false;
+var adding = false;
+var YoTopIndex = 225;
+var YoUserIndex = 4;
 currX = 0;
 currY = 0;
 currColor = "";
