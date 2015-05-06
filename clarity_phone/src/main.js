@@ -439,7 +439,7 @@ var MyField = Container.template(function($) { return {
 }});
 
 var EditContainerTemplate = Container.template(function($) { return {
-  left: 75, width: 250, top: 50, height: 350, skin: whiteSkin, active: true,
+  left: $.left, width: 250, top: 50, height: 350, skin: whiteSkin, active: true,
   behavior: Object.create(Container.prototype, {
     onTouchEnded: { value: function(content){
       KEYBOARD.hide();
@@ -450,8 +450,28 @@ var EditContainerTemplate = Container.template(function($) { return {
 
 var cancelButtonBehavior = Object.create(Behavior.prototype,{
     onTouchEnded: {value: function(content){
+    	editing = false;
         mainContainer.last.remove(mainContainer.last.last);
         mainContainer.last.last.skin = greySkin;
+    }}
+});
+
+var OKButtonBehaviorDraw = Object.create(Behavior.prototype,{
+    onTouchEnded: {value: function(content){
+    	model.lastSavedStack = model.replayStack;
+    	model.lastSavedName = model.nameField.first.first.string;
+        mainContainer.last.remove(mainContainer.last.last);
+        var canvas = model.data.CANVAS;
+    	var ctx = canvas.getContext("2d");
+    	ctx.fillStyle = model.backgroundColor;
+    	ctx.fillRect(0, 0, canvas.width, canvas.height);
+        var replayStack = model.replayStack;
+        var c = replayStack.length;
+        var i = model.replayIndex;
+        while (i < c) {
+        	replayStack[i].replay(canvas, 1, 1);
+        	i++;
+        }
     }}
 });
 
@@ -493,7 +513,7 @@ var editContainer = Container.template(function($) { return {
     onTouchEnded: { value: function(content){
     	if (!editing) {
     		editing = true;
-    		var editBox = new EditContainerTemplate();
+    		var editBox = new EditContainerTemplate({left: 75});
         	mainContainer.last.last.skin = darkGreySkin;
         	mainContainer.last.add(editBox);
         	editBox.add(new Container({ bottom:8, height:36, left:10, width:72, skin:redSkin, active:true, behavior:cancelButtonBehavior,
@@ -537,7 +557,7 @@ var alexData = {
 	name:"Alex",
 	index:0,
 	numWindows:2,
-	windows:["3FF246","3FF246"],
+	windows:["3F24","3F25"],
 	label:alexLabel,
 }
 
@@ -595,7 +615,7 @@ mironEdit.add(new Picture({top:0, right:0, height:30, width:30, url:editURL}));
 
 var OKButtonBehavior = Object.create(Behavior.prototype,{
     onTouchEnded: {value: function(content){
-    	adding = false;
+    	editing = false;
     	if (fieldList[0].first.first.string != "") {
     		YoTopIndex += 50
     		YoUserIndex += 1
@@ -620,9 +640,9 @@ var OKButtonBehavior = Object.create(Behavior.prototype,{
 
 var plusButtonTap = Object.create(Behavior.prototype,{
     onTouchEnded: {value: function(content){
-    	if ((YoUserIndex < 6) && (!adding)) {
-    		adding = true;
-        	var newContactsBox = new EditContainerTemplate();
+    	if ((YoUserIndex < 6) && (!editing)) {
+    		editing = true;
+        	var newContactsBox = new EditContainerTemplate({left: 75});
         	mainContainer.last.last.skin = darkGreySkin;
         	mainContainer.last.add(newContactsBox);
         	newContactsBox.add(new Container({ bottom:8, height:36, left:10, width:72, skin:redSkin, active:true, behavior:cancelButtonBehavior,
@@ -772,9 +792,9 @@ var ReplayLine = function(x, y) {
         this.x = x;
         this.y = y;
 }
-ReplayLine.prototype.replay = function(canvas) {
+ReplayLine.prototype.replay = function(canvas, xmodifier, ymodifier) {
         var ctx = canvas.getContext("2d");
-        ctx.lineTo(this.x, this.y);
+        ctx.lineTo(this.x*xmodifier, this.y*ymodifier);
         ctx.stroke();
 }
 var ReplayMove = function(x, y) {
@@ -787,7 +807,7 @@ var ReplayMove = function(x, y) {
         this.x = x;
         this.y = y;
 }
-ReplayMove.prototype.replay = function(canvas) {
+ReplayMove.prototype.replay = function(canvas, xmodifier, ymodifier) {
         var data = model.data;
         var components = data.components;
         components.r = this.r;
@@ -798,10 +818,10 @@ ReplayMove.prototype.replay = function(canvas) {
         model.onThicknessChanged()
         application.distribute("onModelChanged")
         var ctx = canvas.getContext("2d");
-        ctx.lineWidth = data.thickness
+        ctx.lineWidth = data.thickness*xmodifier
         ctx.strokeStyle = data.color
         ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
+        ctx.moveTo(this.x*xmodifier, this.y*ymodifier);
 }
  
 var ApplicationBehavior = function(application, data, context) {
@@ -822,6 +842,7 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                 this.replayStack.length = 0;
                 this.replayIndex = 0;
                 this.replayFlag = false;
+                this.backgroundColor = "white";
                 var ctx = canvas.getContext("2d");
                 ctx.fillStyle = "white"
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -835,7 +856,7 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                         var c = replayStack.length;
                         var i = this.replayIndex;
                         while (i < c) {
-                                replayStack[i].replay(canvas);
+                                replayStack[i].replay(canvas, 1, 1);
                                 i++;
                         }
                         this.replayFlag = false;
@@ -856,11 +877,49 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
             	trace("pressed\n");
     			application.invoke(new Message(deviceURL + "updateDrawing"), Message.JSON);
     	}},*/
+    	doFill: { value: function() {
+    			var canvas = this.data.CANVAS;
+                var ctx = canvas.getContext("2d");
+                ctx.fillStyle = this.data.color;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                this.backgroundColor = this.data.color;
+                var replayStack = this.replayStack;
+                var c = replayStack.length;
+                var i = this.replayIndex;
+                while (i < c) {
+                	replayStack[i].replay(canvas, 1, 1);
+                    i++;
+                }
+                application.distribute("onModelChanged");
+    	}},
+    	doSave: { value: function() {
+    			var savedBox = new EditContainerTemplate({left:38});
+    			var canvas = this.data.CANVAS;
+    			var ctx = canvas.getContext("2d");
+    			ctx.fillStyle = "gray";
+    			ctx.fillRect(0, 0, canvas.width, canvas.height);
+    			mainContainer.last.add(savedBox);
+    			var nameField = this.nameField = new MyField({ top:10, name:"", hintName:"Drawing Name..." });
+    			savedBox.add(nameField);
+    			this.replaySavedStack = this.replayStack;
+    			this.replaySavedIndex = this.replayIndex;
+    			savedBox.add(new savedScreen(this.data));
+    			/*savedBox.add(new Container({ bottom:0, height:30, left:0, width:72, skin:redSkin, active:true, behavior:cancelButtonBehaviorDraw,
+        			contents:[
+        				new Label({string:"Cancel", style:fieldStyle})
+        			]
+        		})),*/
+        		savedBox.add(new Container({ bottom:0, height:30, right:0, width:72, skin:blueSkin, active:true, behavior:OKButtonBehaviorDraw,
+        			contents:[
+        				new Label({string:"OK", style:fieldStyle})
+        			]
+        		})),
+    	}},
         onColorChanged: { value: function() {
                 var data = this.data;
                 var components = data.components;
                 data.color = "rgb(" + components.r + "," + components.g + "," + components.b + ")";
-                data.color.skin = new Skin(data.color);
+                data.COLOR.skin = new Skin(data.color);
         }},
         onLaunch: { value: function() {
                 var data = this.data = {
@@ -871,6 +930,11 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                 this.replayStack = [];
                 this.replayIndex = 0;
                 this.replayFlag = false;
+                this.replaySavedStack = [];
+                this.replaySavedIndex = 0;
+                this.lastSavedStack = [];
+                this.lastSavedName = "";
+                this.backgroundColor = "white";
                 var drawScreen = this.drawScreen = new Screen(data);
                 //application.add(new Screen(data));
                 mainContainer.add(drawScreen);
@@ -906,7 +970,7 @@ var Screen = Container.template(function($) { return {
                                                 model.replayIndex = 0;
                                         }
                                         else {
-                                                model.replayStack[model.replayIndex].replay(canvas);
+                                                model.replayStack[model.replayIndex].replay(canvas, 1, 1);
                                                 model.replayIndex++;
                                         }
                                         canvas.time = 0;
@@ -996,6 +1060,45 @@ var Screen = Container.template(function($) { return {
                 }),
         ],
 }});
+
+var savedScreen = Container.template(function($) { return {
+        //top:65, bottom: 60, height: 400, width:400, active:true,
+        top:50, bottom:30, left: 0, right:0, active:true,
+        contents: [
+                Canvas($, { anchor:"SAVECANVAS", left:0, right:0, top:0, bottom:0, active:true,
+                        behavior: Object.create(Behavior.prototype, {
+                                onDisplaying: { value: function(canvas) {
+                                        var ctx = canvas.getContext("2d");
+                                        ctx.fillStyle = model.backgroundColor;
+                                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        				canvas.stop();
+                        				var replayStack = model.replaySavedStack;
+                        				var c = replayStack.length;
+                        				var i = model.replaySavedIndex;
+                        				while (i < c) {
+                                				replayStack[i].replay(canvas, 0.75, 0.66);
+                               					i++;
+                        				}
+                        				model.replaySavedIndex = 0;
+                                }},
+                                /*onTouchBegan: { value: function(canvas, id, x, y, ticks) {
+                                        if (model.replayFlag)
+                                                return;
+                                        this.position = canvas.position;
+                                        x -= this.position.x;
+                                        y -= this.position.y;
+                                        var ctx = canvas.getContext("2d");
+                                        ctx.lineWidth = model.data.thickness
+                                        ctx.strokeStyle = model.data.color
+                                        ctx.beginPath();
+                                        ctx.moveTo(x, y);
+                                        model.replayStack.push(new ReplayMove(x, y));                                      
+                                }},*/
+                        }),
+                }),
+        ],
+}});
+                
  
 var Menu = Column.template(function($) { return {
         left:0, top:0,
@@ -1040,7 +1143,7 @@ var Menu = Column.template(function($) { return {
                                 Label($, { left:0, right:0, style:commandStyle, string:"Erase" }),
                         ]
                 }),
-                Line($, {
+                /*Line($, {
                         left:0, right:0, height:44, active:true,
                         behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
                                 onModelChanged: { value: function(line) {
@@ -1053,8 +1156,8 @@ var Menu = Column.template(function($) { return {
                         contents: [
                                 Label($, { left:0, right:0, style:commandStyle, string:"Play" }),
                         ]
-                }),
-                Line($, {
+                }),*/
+                /*Line($, {
                         left:0, right:0, height:44, active:true,
                         behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
                                 onTap: { value: function(line) {
@@ -1063,6 +1166,28 @@ var Menu = Column.template(function($) { return {
                         }),
                         contents: [
                                 Label($, { left:0, right:0, style:commandStyle, string:"Update" }),
+                        ]
+                }),*/
+                Line($, {
+                        left:0, right:0, height:44, active:true,
+                        behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
+                                onTap: { value: function(line) {
+                                        line.bubble("doFill")
+                                }},
+                        }),
+                        contents: [
+                                Label($, { left:0, right:0, style:commandStyle, string:"Fill" }),
+                        ]
+                }),
+                Line($, {
+                        left:0, right:0, height:44, active:true,
+                        behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
+                                onTap: { value: function(line) {
+                                        line.bubble("doSave")
+                                }},
+                        }),
+                        contents: [
+                                Label($, { left:0, right:0, style:commandStyle, string:"Save" }),
                         ]
                 }),
         ]
@@ -1217,7 +1342,6 @@ MenuTransition.prototype = Object.create(Transition.prototype, {
 
 isMenuVisible = false;
 var editing = false;
-var adding = false;
 var YoTopIndex = 225;
 var YoUserIndex = 4;
 currX = 0;
