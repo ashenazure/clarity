@@ -935,7 +935,7 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
         				new Label({string:"Cancel", style:fieldStyle})
         			]
         		})),
-        		loadBox.add(new Container({ bottom:0, height:30, right:0, width:72, skin:blueSkin, active:true, behavior:OKButtonBehaviorDraw,
+        		loadBox.add(new Container({ bottom:0, height:30, right:0, width:72, skin:blueSkin, active:true, behavior:this.OKButtonBehaviorLoad,
         			contents:[
         				new Label({string:"OK", style:fieldStyle})
         			]
@@ -973,6 +973,23 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
     					ctx.fillStyle = model.backgroundColor;
     					ctx.fillRect(0, 0, canvas.width, canvas.height);
         				var replayStack = model.replayStack;
+        				var c = replayStack.length;
+        				var i = model.replayIndex;
+        				while (i < c) {
+        					replayStack[i].replay(canvas, 1, 1);
+        					i++;
+        				}
+    				}}
+				});
+				this.OKButtonBehaviorLoad = Object.create(Behavior.prototype,{
+    				onTouchEnded: {value: function(content){
+    					model.lastSavedName = model.nameField.first.first.string;
+        				mainContainer.last.remove(mainContainer.last.last);
+        				var canvas = model.data.CANVAS;
+    					var ctx = canvas.getContext("2d");
+    					ctx.fillStyle = model.bgc;
+    					ctx.fillRect(0, 0, canvas.width, canvas.height);
+        				var replayStack = model.lastSavedStack;
         				var c = replayStack.length;
         				var i = model.replayIndex;
         				while (i < c) {
