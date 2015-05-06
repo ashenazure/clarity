@@ -458,12 +458,13 @@ var cancelButtonBehavior = Object.create(Behavior.prototype,{
 
 var OKButtonBehaviorDraw = Object.create(Behavior.prototype,{
     onTouchEnded: {value: function(content){
-    	model.lastSavedStack = model.replayStack;
+    	model.lastSavedStack = model.replaySavedStack.slice();
     	model.lastSavedName = model.nameField.first.first.string;
         mainContainer.last.remove(mainContainer.last.last);
         var canvas = model.data.CANVAS;
     	var ctx = canvas.getContext("2d");
     	ctx.fillStyle = model.backgroundColor;
+    	model.bgc = model.backgroundColor;
     	ctx.fillRect(0, 0, canvas.width, canvas.height);
         var replayStack = model.replayStack;
         var c = replayStack.length;
@@ -903,13 +904,38 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
     			savedBox.add(nameField);
     			this.replaySavedStack = this.replayStack;
     			this.replaySavedIndex = this.replayIndex;
+    			this.mode = "save";
     			savedBox.add(new savedScreen(this.data));
-    			/*savedBox.add(new Container({ bottom:0, height:30, left:0, width:72, skin:redSkin, active:true, behavior:cancelButtonBehaviorDraw,
+    			savedBox.add(new Container({ bottom:0, height:30, left:0, width:72, skin:redSkin, active:true, behavior:this.cancelButtonBehaviorDraw,
         			contents:[
         				new Label({string:"Cancel", style:fieldStyle})
         			]
-        		})),*/
+        		})),
         		savedBox.add(new Container({ bottom:0, height:30, right:0, width:72, skin:blueSkin, active:true, behavior:OKButtonBehaviorDraw,
+        			contents:[
+        				new Label({string:"OK", style:fieldStyle})
+        			]
+        		})),
+    	}},
+    	doLoad: { value: function() {
+    			var loadBox = new EditContainerTemplate({left:38});
+    			var canvas = this.data.CANVAS;
+    			var ctx = canvas.getContext("2d");
+    			ctx.fillStyle = "gray";
+    			ctx.fillRect(0, 0, canvas.width, canvas.height);
+    			mainContainer.last.add(loadBox);
+    			var nameField = this.nameField = new MyField({ top:10, name:this.lastSavedName, hintName:"Drawing Name..." });
+    			loadBox.add(nameField);
+    			this.replaySavedStack = this.lastSavedStack;
+    			this.replaySavedIndex = this.replayIndex;
+    			this.mode = "load";
+    			loadBox.add(new savedScreen(this.data));
+    			loadBox.add(new Container({ bottom:0, height:30, left:0, width:72, skin:redSkin, active:true, behavior:this.cancelButtonBehaviorDraw,
+        			contents:[
+        				new Label({string:"Cancel", style:fieldStyle})
+        			]
+        		})),
+        		loadBox.add(new Container({ bottom:0, height:30, right:0, width:72, skin:blueSkin, active:true, behavior:OKButtonBehaviorDraw,
         			contents:[
         				new Label({string:"OK", style:fieldStyle})
         			]
@@ -935,9 +961,26 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                 this.lastSavedStack = [];
                 this.lastSavedName = "";
                 this.backgroundColor = "white";
+                this.bgc = "white";
                 var drawScreen = this.drawScreen = new Screen(data);
                 //application.add(new Screen(data));
                 mainContainer.add(drawScreen);
+                this.cancelButtonBehaviorDraw = Object.create(Behavior.prototype,{
+    				onTouchEnded: {value: function(content){
+        				mainContainer.last.remove(mainContainer.last.last);
+        				var canvas = model.data.CANVAS;
+    					var ctx = canvas.getContext("2d");
+    					ctx.fillStyle = model.backgroundColor;
+    					ctx.fillRect(0, 0, canvas.width, canvas.height);
+        				var replayStack = model.replayStack;
+        				var c = replayStack.length;
+        				var i = model.replayIndex;
+        				while (i < c) {
+        					replayStack[i].replay(canvas, 1, 1);
+        					i++;
+        				}
+    				}}
+				});
         }},
         onThicknessChanged: { value: function() {
                 var data = this.data;
@@ -1069,7 +1112,12 @@ var savedScreen = Container.template(function($) { return {
                         behavior: Object.create(Behavior.prototype, {
                                 onDisplaying: { value: function(canvas) {
                                         var ctx = canvas.getContext("2d");
-                                        ctx.fillStyle = model.backgroundColor;
+                                        if (model.mode == "save") {
+                                            ctx.fillStyle = model.backgroundColor;
+                                        }
+                                        if (model.mode == "load") {
+                                            ctx.fillStyle = model.bgc;
+                                        }
                                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         				canvas.stop();
                         				var replayStack = model.replaySavedStack;
@@ -1188,6 +1236,17 @@ var Menu = Column.template(function($) { return {
                         }),
                         contents: [
                                 Label($, { left:0, right:0, style:commandStyle, string:"Save" }),
+                        ]
+                }),
+                Line($, {
+                        left:0, right:0, height:37, active:true,
+                        behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
+                                onTap: { value: function(line) {
+                                        line.bubble("doLoad")
+                                }},
+                        }),
+                        contents: [
+                                Label($, { left:0, right:0, style:commandStyle, string:"Load" }),
                         ]
                 }),
         ]
