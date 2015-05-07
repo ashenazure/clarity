@@ -8,58 +8,141 @@ var bigLabelStyle = new Style( { font: "bold 48px", color:"black" } );
 var timeStyle = new Style({ color: 'black', font: 'bold 64px', horizontal: 'center', vertical: 'middle', });
 
 // Stuff for draw
+var THEME = require("themes/sample/theme");
+var CONTROL = require("mobile/control");
+var SCROLLER = require("mobile/scroller");
 var MODEL = require("mobile/model");
+
 var ReplayLine = function(x, y) {
         this.x = x;
         this.y = y;
 }
-ReplayLine.prototype.replay = function(canvas) {
+ReplayLine.prototype.replay = function(canvas, xmodifier, ymodifier) {
         var ctx = canvas.getContext("2d");
-        ctx.lineTo(this.x, this.y);
+        ctx.lineTo(this.x*xmodifier, this.y*ymodifier);
         ctx.stroke();
 }
-var ReplayMove = function(x, y, color, thickness) {
-        this.color = color
-        this.thickness = thickness;
+var ReplayMove = function(x, y) {
+        var data = model.data;
+        //var components = data.components;
+        //this.r = components.r;
+        //this.g = components.g;
+        //this.b = components.b;
+        this.color = data.color;
+        this.thickness = data.thickness;
         this.x = x;
         this.y = y;
 }
-ReplayMove.prototype.replay = function(canvas) {
+ReplayMove.prototype.replay = function(canvas, xmodifier, ymodifier) {
+        var data = model.data;
+        //var components = data.components;
+        //components.r = this.r;
+        //components.g = this.g;
+        //components.b = this.b;
+        //model.onColorChanged();
+        data.thickness = this.thickness;
+        //model.onThicknessChanged()
+        //application.distribute("onModelChanged")
         var ctx = canvas.getContext("2d");
-        ctx.lineWidth = thickness;
-        ctx.strokeStyle = color;
+        ctx.lineWidth = data.thickness*xmodifier;
+        ctx.strokeStyle = this.color;
         ctx.beginPath();
-        ctx.moveTo(this.x, this.y);
+        ctx.moveTo(this.x*xmodifier, this.y*ymodifier);
 }
-
+ 
 var ApplicationBehavior = function(application, data, context) {
         MODEL.ApplicationBehavior.call(this, application, data, context);
 }
-
 ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototype, {
-		onLaunch: { value: function() {
-				application.shared = true;
-				application.discover("clarity_phone.app");
-                this.drawStack = [];
-                //var data = this.data = {}
+        onQuit:  { value: function(application) {
+        		application.shared = false;
+                application.forget("clarity_phone.app");
         }},
-		onQuit: function(application) {
-				application.shared = false;
-				application.forget("clarity_phone.app");
-		},
-		onUpdate: { value: function(application) {
-                var canvas = currentDrawing;
-                var drawStack = this.drawStack;
-                var c = drawStack.length;
-                var i = 0;
-                while (i < c) {
-                        drawStack[i].replay(canvas);
-                        i++;
-                }
-		}},
-})
-
+        onLaunch: { value: function() {
+        		application.shared = true;
+				application.discover("clarity_phone.app");
+                var data = this.data = {
+                        color: "black",
+                        components: {r:0, g:0, b:0},
+                        thickness: 10,
+                };
+                this.replayStack = [];
+                this.replayIndex = 0;
+                this.replayFlag = false;
+                this.replaySavedStack = [];
+                this.replaySavedIndex = 0;
+                this.lastSavedStack = [];
+                this.lastSavedName = "";
+                this.backgroundColor = newFill;
+                this.bgc = "white";
+                var drawScreen = this.drawScreen = new Screen(data);
+                //application.add(new Screen(data));
+                mainContainer.add(drawScreen);
+        }},
+});
+ 
 var model = application.behavior = new ApplicationBehavior(application);
+
+var Screen = Container.template(function($) { return {
+        //top:65, bottom: 60, height: 400, width:400, active:true,
+        top:0, bottom:0, left: 0, right:0, active:true,
+        contents: [
+                Canvas($, { anchor:"CANVAS", left:0, right:0, top:0, bottom:0, active:true,
+                        /*behavior: Object.create(Behavior.prototype, {
+                                //onDisplaying: { value: function(canvas) {
+                                //        var ctx = canvas.getContext("2d");
+                                //        ctx.fillStyle = "white"
+                                //        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                //}},
+                                onFinished: { value: function(canvas) {
+                                        if (model.replayIndex >= model.replayStack.length) {
+                                                var ctx = canvas.getContext("2d");
+                                                ctx.fillStyle = "white"
+                                                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                                                model.replayIndex = 0;
+                                        }
+                                        else {
+                                                model.replayStack[model.replayIndex].replay(canvas, 1, 1);
+                                                model.replayIndex++;
+                                        }
+                                        canvas.time = 0;
+                                        canvas.start();
+                                }},
+                                onTouchBegan: { value: function(canvas, id, x, y, ticks) {
+                                        if (model.replayFlag)
+                                                return;
+                                        this.position = canvas.position;
+                                        x -= this.position.x;
+                                        y -= this.position.y;
+                                        var ctx = canvas.getContext("2d");
+                                        ctx.lineWidth = model.data.thickness
+                                        ctx.strokeStyle = model.data.color
+                                        ctx.beginPath();
+                                        ctx.moveTo(x, y);
+                                        model.replayStack.push(new ReplayMove(x, y));
+                                        currX = x;
+                                        currY = y;
+                                        currColor = "rgb(" + model.data.components.r + "," + model.data.components.g + "," + model.data.components.b + ")";
+                                        currThickness = model.data.thickness;
+                                        application.invoke(new Message(deviceURL + "moveUpdate"), Message.JSON);                                        
+                                }},
+                                onTouchMoved: { value: function(canvas, id, x, y, ticks) {
+                                        if (model.replayFlag)
+                                                return;
+                                        x -= this.position.x;
+                                        y -= this.position.y;
+                                        var ctx = canvas.getContext("2d");
+                                        ctx.lineTo(x, y);
+                                        ctx.stroke();
+                                        model.replayStack.push(new ReplayLine(x, y));
+                                        currX = x;
+                                        currY = y;
+                                        application.invoke(new Message(deviceURL + "lineUpdate"), Message.JSON);
+                                }},
+                        }),*/
+                }),
+        ],
+}});
 
 // end draw stuff
 
@@ -116,31 +199,41 @@ Handler.bind("/lineUpdate", {
 	    handler.invoke(new Message(deviceURL + "getLine"), Message.JSON);
 	},
 	onComplete: function(handler, message, result) {
-	    model.drawStack.push(new ReplayLine(result.x, result.y));
+	    model.replayStack.push(new ReplayLine(result.x, result.y));
 	}
 });
 
 Handler.bind("/moveUpdate", {
 	onInvoke: function(handler, message){
-	    trace("updating move");
 	    handler.invoke(new Message(deviceURL + "getMove"), Message.JSON);
 	},
 	onComplete: function(handler, message, result) {
-	    trace("finished updating");
-	    trace("result " + result.thickness);
-	    model.drawStack.push(new ReplayMove(result.x, result.y, result.color, result.thickness));
+	    model.data.thickness = result.thickness;
+	    model.data.color = result.color;
+	    model.replayStack.push(new ReplayMove(result.x, result.y));
 	}
 });
 
 Handler.bind("/eraseDrawing", {
     onInvoke: function(handler, message){
-        model.drawStack = [];
+        model.replayStack = [];
     }
 });
 
 Handler.bind("/updateDrawing", {
     onInvoke: function(handler, message){
-        application.distribute("onUpdate");
+    	var canvas = model.data.CANVAS;
+    	var ctx = canvas.getContext("2d");
+    	ctx.fillStyle = newFill;
+    	//ctx.fillStyle = "white";
+    	ctx.fillRect(0, 0, canvas.width, canvas.height);
+        var replayStack = model.replayStack;
+        var c = replayStack.length;
+        var i = model.replayIndex;
+        while (i < c) {
+        	replayStack[i].replay(canvas, 1, 0.6);
+        	i++;
+        }
     }
 });
 
@@ -300,7 +393,7 @@ Handler.bind("/removeYo", Behavior({
 var YoBox = new Container({
     left: 111, width: 99, top: 83, height: 75, skin: redSkin,
     contents: [
-        new Label({left:0, right:0, top:0, bottom:0, string:"YO!", style: bigLabelStyle}),
+        new Label({left:10, right:0, top:0, bottom:0, string:"YO!", style: bigLabelStyle}),
     ],
 });
 
@@ -350,8 +443,12 @@ mainContainerObj.behavior = Behavior.template({
 	},
 	onValueChanged: function(container,result) {
 	    percentage = brightnessLevel/(100*result.brightness);
+	    var canvas = model.data.CANVAS;
+    	var ctx = canvas.getContext("2d");
 	    if (percentage >= 1) {
 	        container.skin = whiteSkin;
+	        ctx.fillStyle = "white";
+	        
 	    }
 	    else {
 	        decVal = Math.round(percentage*255);
@@ -361,7 +458,46 @@ mainContainerObj.behavior = Behavior.template({
             }
             newFill = "#" + hexVal + hexVal + hexVal;
             container.skin = new Skin({fill: newFill});
-	    }
+    		ctx.fillStyle = newFill;
+    	}
+    	ctx.fillRect(0, 0, canvas.width, canvas.height);
+        var replayStack = model.replayStack;
+        var c = replayStack.length;
+        var i = model.replayIndex;
+        while (i < c) {
+        	replayStack[i].replay(canvas, 1, 0.6);
+        	i++;
+        }
+        mainContainer.add(new Container({left:0, width:4, top:0, bottom:0, skin:whiteSkin}));
+		mainContainer.add(new Container({left:105, width:5, top:0, bottom:0, skin:whiteSkin}));
+		mainContainer.add(new Container({left:211, width:5, top:0, bottom:0, skin:whiteSkin}));
+		mainContainer.add(new Container({left:317, width:5, top:0, bottom:0, skin:whiteSkin}));
+		mainContainer.add(new Container({left:0, right:0, top:77, height:5, skin:whiteSkin}));
+		mainContainer.add(new Container({left:0, right:0, top:159, height:5, skin:whiteSkin}));
+		mainContainer.add(new Container({left:104, width:1, top:0, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:104, width:1, top:82, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:104, width:1, top:164, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:110, width:1, top:0, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:110, width:1, top:82, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:110, width:1, top:164, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:210, width:1, top:0, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:210, width:1, top:82, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:210, width:1, top:164, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:216, width:1, top:0, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:216, width:1, top:82, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:216, width:1, top:164, height:77, skin:blackSkin}));
+		mainContainer.add(new Container({left:4, width:101, top:76, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:4, width:101, top:82, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:4, width:101, top:158, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:4, width:101, top:164, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:110, width:101, top:76, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:110, width:101, top:82, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:110, width:101, top:158, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:110, width:101, top:164, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:216, width:101, top:76, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:216, width:101, top:82, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:216, width:101, top:158, height:1, skin:blackSkin}));
+		mainContainer.add(new Container({left:216, width:101, top:164, height:1, skin:blackSkin}));
 	},
 })
 
@@ -390,7 +526,7 @@ application.invoke( new MessageWithObject( "pins:configure",{
 }));
 
 //////////////////////////////////////////////
-
+var newFill = "";
 hour = 1;
 minute = 0;
 alarm = 0;

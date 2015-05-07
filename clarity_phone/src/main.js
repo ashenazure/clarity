@@ -47,14 +47,14 @@ Handler.bind("/currentBrightness", Behavior({
 	}
 }));
 
-/*Handler.bind("/getMove", {
+Handler.bind("/getMove", {
 	onInvoke: function(handler, message){
 	    trace("you've reached me");
 	    trace(currX);
 	    message.responseText = JSON.stringify( { x: currX, y: currY, color: currColor, thickness: currThickness } );
 	    message.status = 200;
     }
-});*/
+});
 
 Handler.bind("/getLine", {
 	onInvoke: function(handler, message){
@@ -848,6 +848,7 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                 ctx.fillStyle = "white"
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 application.distribute("onModelChanged");
+                application.invoke(new Message(deviceURL + "eraseDrawing"), Message.JSON);
         }},
         doPlay: { value: function(application) {
                 var canvas = this.data.CANVAS;
@@ -874,10 +875,10 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                 }
                 application.distribute("onModelChanged");
         }},
-        /*doUpdate: { value: function() {
+        doUpdate: { value: function() {
             	trace("pressed\n");
     			application.invoke(new Message(deviceURL + "updateDrawing"), Message.JSON);
-    	}},*/
+    	}},
     	doFill: { value: function() {
     			var canvas = this.data.CANVAS;
                 var ctx = canvas.getContext("2d");
@@ -1048,11 +1049,11 @@ var Screen = Container.template(function($) { return {
                                         ctx.beginPath();
                                         ctx.moveTo(x, y);
                                         model.replayStack.push(new ReplayMove(x, y));
-                                        /*currX = x;
+                                        currX = x;
                                         currY = y;
                                         currColor = "rgb(" + model.data.components.r + "," + model.data.components.g + "," + model.data.components.b + ")";
                                         currThickness = model.data.thickness;
-                                        application.invoke(new Message(deviceURL + "moveUpdate"), Message.JSON);*/                                        
+                                        application.invoke(new Message(deviceURL + "moveUpdate"), Message.JSON);                                        
                                 }},
                                 onTouchMoved: { value: function(canvas, id, x, y, ticks) {
                                         if (model.replayFlag)
@@ -1063,9 +1064,9 @@ var Screen = Container.template(function($) { return {
                                         ctx.lineTo(x, y);
                                         ctx.stroke();
                                         model.replayStack.push(new ReplayLine(x, y));
-                                        /*currX = x;
+                                        currX = x;
                                         currY = y;
-                                        application.invoke(new Message(deviceURL + "lineUpdate"), Message.JSON);*/
+                                        application.invoke(new Message(deviceURL + "lineUpdate"), Message.JSON);
                                 }},
                         }),
                 }),
@@ -1233,7 +1234,7 @@ var Menu = Column.template(function($) { return {
                                 Label($, { left:0, right:0, style:commandStyle, string:"Update" }),
                         ]
                 }),*/
-                Line($, {
+                /*Line($, {
                         left:0, right:0, height:44, active:true,
                         behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
                                 onTap: { value: function(line) {
@@ -1243,7 +1244,7 @@ var Menu = Column.template(function($) { return {
                         contents: [
                                 Label($, { left:0, right:0, style:commandStyle, string:"Fill" }),
                         ]
-                }),
+                }),*/
                 Line($, {
                         left:0, right:0, height:44, active:true,
                         behavior: Object.create(CONTROL.ButtonBehavior.prototype, {
