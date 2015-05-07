@@ -1008,13 +1008,14 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
 				this.OKButtonBehaviorLoad = Object.create(Behavior.prototype,{
     				onTouchEnded: {value: function(content){
     					application.invoke(new Message(deviceURL + "load"), Message.JSON);
+    					model.replayStack = model.lastSavedStack.slice();
     					model.lastSavedName = model.nameField.first.first.string;
         				mainContainer.last.remove(mainContainer.last.last);
         				var canvas = model.data.CANVAS;
     					var ctx = canvas.getContext("2d");
     					ctx.fillStyle = model.bgc;
     					ctx.fillRect(0, 0, canvas.width, canvas.height);
-        				var replayStack = model.lastSavedStack.slice();
+        				var replayStack = model.replayStack;
         				var c = replayStack.length;
         				var i = model.replayIndex;
         				while (i < c) {

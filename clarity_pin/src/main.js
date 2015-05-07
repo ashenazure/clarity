@@ -570,7 +570,7 @@ minute = 0;
 alarm = 0;
 brightnessLevel = 50;
 yoThere = 0; // is the yo box already there ??
-application.invoke( new MessageWithObject( "pins:/analogSensor/read?repeat=on&callback=/newValue&interval=500" ) );
+application.invoke( new MessageWithObject( "pins:/analogSensor/read?repeat=on&callback=/newValue&interval=2000" ) );
 //application.behavior = new ApplicationBehavior();
 mainContainer = new mainContainerObj();
 application.add(mainContainer);
