@@ -250,6 +250,31 @@ Handler.bind("/updateDrawing", {
     }
 });
 
+Handler.bind("/saveCurrent", {
+	onInvoke: function(handler, message){
+		model.lastSavedStack = model.replayStack.slice();
+	},
+});
+
+Handler.bind("/load", {
+	onInvoke: function(handler, message){
+		model.replayStack = model.lastSavedStack;
+		var canvas = model.data.CANVAS;
+    	var ctx = canvas.getContext("2d");
+    	ctx.fillStyle = newFill;
+    	//ctx.fillStyle = "white";
+    	ctx.fillRect(0, 0, canvas.width, canvas.height);
+        var replayStack = model.replayStack;
+        var c = replayStack.length;
+        var i = model.replayIndex;
+        while (i < c) {
+        	replayStack[i].replay(canvas, 1, 0.6);
+        	i++;
+        }
+    }
+});
+		
+
 Handler.bind("/requestBrightness", Behavior({
 	onInvoke: function(handler, message){
 		handler.invoke(new Message(deviceURL + "currentBrightness"), Message.JSON);
@@ -461,7 +486,7 @@ mainContainerObj.behavior = Behavior.template({
 	    if (percentage >= 1) {
 	        container.skin = whiteSkin;
 	        ctx.fillStyle = "white";
-	        
+	        newFill = "white";
 	    }
 	    else {
 	        decVal = Math.round(percentage*255);

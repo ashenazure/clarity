@@ -61,8 +61,6 @@ Handler.bind("/currentBrightness", Behavior({
 
 Handler.bind("/getMove", {
 	onInvoke: function(handler, message){
-	    trace("you've reached me");
-	    trace(currX);
 	    message.responseText = JSON.stringify( { x: currX, y: currY, color: currColor, thickness: currThickness } );
 	    message.status = 200;
     }
@@ -484,6 +482,7 @@ var cancelButtonBehavior = Object.create(Behavior.prototype,{
 
 var OKButtonBehaviorDraw = Object.create(Behavior.prototype,{
     onTouchEnded: {value: function(content){
+    	application.invoke(new Message(deviceURL + "saveCurrent"), Message.JSON);
     	model.lastSavedStack = model.replaySavedStack.slice();
     	model.lastSavedName = model.nameField.first.first.string;
         mainContainer.last.remove(mainContainer.last.last);
@@ -903,7 +902,6 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
                 application.distribute("onModelChanged");
         }},
         doUpdate: { value: function() {
-            	trace("pressed\n");
     			application.invoke(new Message(deviceURL + "updateDrawing"), Message.JSON);
     	}},
     	doFill: { value: function() {
@@ -954,8 +952,6 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
     			mainContainer.last.add(loadBox);
     			var nameField = this.nameField = new MyField({ top:10, name:this.lastSavedName, hintName:"Drawing Name..." });
     			loadBox.add(nameField);
-    			this.replaySavedStack = this.lastSavedStack;
-    			this.replaySavedIndex = this.replayIndex;
     			this.mode = "load";
     			loadBox.add(new savedScreen(this.data));
     			loadBox.add(new Container({ bottom:0, height:30, left:0, width:72, skin:redSkin, active:true, behavior:this.cancelButtonBehaviorDraw,
@@ -1011,13 +1007,14 @@ ApplicationBehavior.prototype = Object.create(MODEL.ApplicationBehavior.prototyp
 				});
 				this.OKButtonBehaviorLoad = Object.create(Behavior.prototype,{
     				onTouchEnded: {value: function(content){
+    					application.invoke(new Message(deviceURL + "load"), Message.JSON);
     					model.lastSavedName = model.nameField.first.first.string;
         				mainContainer.last.remove(mainContainer.last.last);
         				var canvas = model.data.CANVAS;
     					var ctx = canvas.getContext("2d");
     					ctx.fillStyle = model.bgc;
     					ctx.fillRect(0, 0, canvas.width, canvas.height);
-        				var replayStack = model.lastSavedStack;
+        				var replayStack = model.lastSavedStack.slice();
         				var c = replayStack.length;
         				var i = model.replayIndex;
         				while (i < c) {
@@ -1157,15 +1154,17 @@ var savedScreen = Container.template(function($) { return {
                         behavior: Object.create(Behavior.prototype, {
                                 onDisplaying: { value: function(canvas) {
                                         var ctx = canvas.getContext("2d");
+                                        var replayStack = "";
                                         if (model.mode == "save") {
                                             ctx.fillStyle = model.backgroundColor;
+                                            replayStack = model.replaySavedStack;
                                         }
                                         if (model.mode == "load") {
                                             ctx.fillStyle = model.bgc;
+                                            replayStack = model.lastSavedStack;
                                         }
                                         ctx.fillRect(0, 0, canvas.width, canvas.height);
                         				canvas.stop();
-                        				var replayStack = model.replaySavedStack;
                         				var c = replayStack.length;
                         				var i = model.replaySavedIndex;
                         				while (i < c) {
