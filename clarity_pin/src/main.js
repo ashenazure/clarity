@@ -1,3 +1,4 @@
+
 // KPR Script file
 
 var whiteSkin = new Skin( { fill:"white" } );
@@ -219,6 +220,18 @@ Handler.bind("/eraseDrawing", {
         model.replayStack = [];
     }
 });
+
+Handler.bind("/requestAlarm", Behavior({
+	onInvoke: function(handler, message){
+		handler.invoke(new Message(deviceURL + "currentAlarm"), Message.JSON);
+	},
+	onComplete: function(handler, message, json) {
+		if (json) {
+			hour = json.hour;
+			minute = json.minute;
+		}
+	}
+}));
 
 Handler.bind("/updateDrawing", {
     onInvoke: function(handler, message){

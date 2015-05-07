@@ -13,7 +13,11 @@ var THEME = require('themes/flat/theme');
 var SLIDERS = require('controls/sliders');
 var SCROLLER = require('mobile/scroller');
 var SWITCHES = require('controls/switch');
+var CONTROL = require('mobile/control');
+var KEYBOARD = require('mobile/keyboard');
 var currentBrightness = 0;
+var currentHour = '';
+var currentMinute = '';
 ///////////////////
 // Device Handling
 ///////////////////
@@ -40,6 +44,14 @@ Handler.bind("/sendNewBrightness", Behavior({
 	}
 }));
 
+Handler.bind("/sendNewAlarm", Behavior({
+	onInvoke: function(handler, message){
+		if (deviceURL != ''){
+			handler.invoke(new Message(deviceURL + "requestAlarm"), Message.JSON);
+		}
+	}
+}));
+
 Handler.bind("/currentBrightness", Behavior({
 	onInvoke: function(handler, message){
 		message.responseText = JSON.stringify( { brightness: currentBrightness } );
@@ -62,6 +74,12 @@ Handler.bind("/getLine", {
 	    message.status = 200;
 	}
 });
+Handler.bind("/currentAlarm", Behavior({
+	onInvoke: function(handler, message){
+		message.responseText = JSON.stringify( { hour: currentHour, minute: currentMinute} );
+		message.status = 200;
+	}
+}));
  
 //var connectionApplicationBehavior = Behavior.template({
 //        onDisplayed: function(application) {
@@ -174,6 +192,7 @@ var BrightnessSlider = SLIDERS.HorizontalSlider.template(function($){ return{
 }});
 var blackBox = new Container({ left:40, height:10, top:55, width:10, skin: new Skin( {fill:"black"} ) });
 var whiteBox = new Container({ right:40, height:10, top:55, width:10, skin: new Skin( {fill:"#F0F0F0"} ) });
+
 var slider = new BrightnessSlider({ min:0, max:100, value:50,  });
 var brightnessContainer = new Container({
         top:65, bottom: 60, height: 400, width:400,
@@ -183,7 +202,7 @@ var brightnessContainer = new Container({
                 slider,
                 brightnessBox,
                 blackBox,
-                whiteBox,
+                whiteBox
         ]
 });
  
@@ -204,49 +223,16 @@ var alarmTap = Object.create(Behavior.prototype,{
         mainContainer.add(alarmContainer);
     }}
 });
+/*
 var alarmStyle = new Style( { font: "bold 40px", color:"gray" } );
+var colonStyle = new Style( { font: "bold 50px", color:"black" } );
 var alarmLabel = new Label({top: 30, left:150, right: 0, height:60, string:"Alarm", style: alarmStyle});
+var newColonLabel = new Label({top: 170, left:200, right: 0, height:60, string:":", style: colonStyle});
+*/
  
 var clockStyle = new Style( { font: "bold 50px", color:"black" } );
 var hour = 1;
 var hourLabel = new Label({top: 150, left:133,height:50, string:"0" + hour, style: clockStyle});
-var hourIncreaseTap = Object.create(Behavior.prototype,{
-    onTouchBegan: {value: function(content){
-                if(hour < 24) {
-                    if(deviceURL != "") {
-                        content.invoke(new Message(deviceURL + "hourUp"), Message.JSON);
-                    }
-                        hour++;
-                        if(hour < 10) {
-                                hourLabel.string = "0" + hour;
-                        } else {
-                                hourLabel.string = hour;
-                        }
-                }
-    }}
-});
-var hourDecreaseTap = Object.create(Behavior.prototype,{
-    onTouchBegan: {value: function(content){
-                if(hour > 1) {
-                    if(deviceURL != "") {
-                        content.invoke(new Message(deviceURL + "hourDown"), Message.JSON);
-                    }
-                        hour--;
-                        hourLabel.string = hour;
-                        if(hour < 10) {
-                                hourLabel.string = "0" + hour;
-                        } else {
-                                hourLabel.string = hour;
-                        }
-                }
-    }}
-});
-var hourUpButton = new Picture({
-        left:130, top:100, height:50, width: 50, url: arrowUpImageURL, active: true, behavior: hourIncreaseTap
-});
-var hourDownButton = new Picture({
-        left:130, top:200, height:50, width: 50, url: arrowDownImageURL, active: true, behavior: hourDecreaseTap
-});
 var alarmTap = Object.create(Behavior.prototype,{
     onTouchBegan: {value: function(content){
     	application.invoke(new Message(deviceURL + "alarmScreen"), Message.JSON);
@@ -257,47 +243,7 @@ var alarmTap = Object.create(Behavior.prototype,{
 var colonLabel = new Label({top: 150, left:190,height:50, string:":", style: clockStyle});
 var minute = 0;
 var minuteLabel = new Label({top: 150, left:223,height:50, string:"00", style: clockStyle});
-var minuteIncreaseTap = Object.create(Behavior.prototype,{
-    onTouchBegan: {value: function(content){
-                if(minute < 59) {
-                    if(deviceURL != "") {
-                        content.invoke(new Message(deviceURL + "minuteUp"), Message.JSON);
-                    }
-                        minute++;
-                        if(minute < 10) {
-                                minuteLabel.string = "0" + minute;
-                        } else {
-                                minuteLabel.string = minute;
-                        }
-                }
-    }}
-});
-var minuteDecreaseTap = Object.create(Behavior.prototype,{
-    onTouchBegan: {value: function(content){
-                if(minute > 0) {
-                    if(deviceURL != "") {
-                        content.invoke(new Message(deviceURL + "minuteDown"), Message.JSON);
-                    }
-                        minute--;
-                        minuteLabel.string = minute;
-                        if(minute < 10) {
-                                if (minute == 0) {
-                                        minuteLabel.string = "00";                             
-                                } else {
-                                        minuteLabel.string = "0" + minute;
-                                }
-                        } else {
-                                minuteLabel.string = minute;
-                        }
-                }
-    }}
-});
-var minuteUpButton = new Picture({
-        left:220, top:100, height:50, width: 50, url: arrowUpImageURL, active: true, behavior: minuteIncreaseTap
-});
-var minuteDownButton = new Picture({
-        left:220, top:200, height:50, width: 50, url: arrowDownImageURL, active: true, behavior: minuteDecreaseTap
-});
+
 var alarmSwitchTemplate = SWITCHES.SwitchButton.template(function($){ return{
   height:50, width: 100, left: 160, top:250,
   behavior: Object.create(SWITCHES.SwitchButtonBehavior.prototype, {
@@ -307,24 +253,106 @@ var alarmSwitchTemplate = SWITCHES.SwitchButton.template(function($){ return{
       trace("Alarm is set to: " + this.data.value + "\n");
   }}})
 }});
- 
+
+
+var nameInputSkin = new Skin({ borders: { left:2, right:2, top:2, bottom:2 }, stroke: 'gray',});
+var fieldStyle = new Style({ color: 'black', font: 'bold 24px', horizontal: 'left', vertical: 'middle', left: 5, right: 5, top: 5, bottom: 5, });
+var fieldHintStyle = new Style({ color: '#aaa', font: '24px', horizontal: 'left', vertical: 'middle', left: 5, right: 5, top: 5, bottom: 5, });
+var whiteSkin = new Skin({fill:"white"});
+
+var reg = new RegExp('^[0-9]+$');
+var hourLabel = new Label({left:4, right:4, top:4, bottom:4, style:fieldHintStyle, string:"Hour", name:"hint"});
+var hourField = Container.template(function($) { return { 
+  width: 75, height: 36, left: 120, skin: nameInputSkin, contents: [
+    Scroller($, { 
+      left: 4, right: 4, top: 4, bottom: 4, active: true, 
+      behavior: Object.create(CONTROL.FieldScrollerBehavior.prototype), clip: true, contents: [
+        Label($, { 
+          left: 0, top: 0, bottom: 0, skin: THEME.fieldLabelSkin, style: fieldStyle, anchor: 'NAME',
+          editable: true, string: $.name,
+         	behavior: Object.create( CONTROL.FieldLabelBehavior.prototype, {
+         		onEdited: { value: function(label){
+         			var data = this.data;
+         			data.name = label.string;
+              		label.container.hint.visible = ( data.name.length == 0 );	
+         		}}
+         	}),
+         }),
+         hourLabel
+      ]
+    })
+  ]
+}});
+
+var minuteLabel = new Label({left:4, right:4, top:4, bottom:4, style:fieldHintStyle, string:"Min", name:"hint"});
+var minuteField = Container.template(function($) { return { 
+  width: 75, height: 36, left: 220, skin: nameInputSkin, contents: [
+    Scroller($, { 
+      left: 4, right: 4, top: 4, bottom: 4, active: true, 
+      behavior: Object.create(CONTROL.FieldScrollerBehavior.prototype), clip: true, contents: [
+        Label($, { 
+          left: 0, top: 0, bottom: 0, skin: THEME.fieldLabelSkin, style: fieldStyle, anchor: 'NAME',
+          editable: true, string: $.name,
+         	behavior: Object.create( CONTROL.FieldLabelBehavior.prototype, {
+         		onEdited: { value: function(label){
+         			var data = this.data;
+              		data.name = label.string;
+              		label.container.hint.visible = ( data.name.length == 0 );	
+         		}}
+         	}),
+         }),
+         minuteLabel
+      ]
+    })
+  ]
+}});
+
 var alarmSwitch = new alarmSwitchTemplate({ value: 0 });
-var alarmContainer = new Container({
-        top:65, bottom: 60, height: 400, width:400,
-        skin:greySkin,
-        contents:[
-                alarmLabel,
-                hourUpButton,
-                hourLabel,
-                hourDownButton,
-                colonLabel,
-                minuteUpButton,
-                minuteLabel,
-                minuteDownButton,
-                alarmSwitch
-        ]
-});
- 
+var hourfieldbox = new hourField({ name: "" });
+var minutefieldbox = new minuteField({ name: "" });
+var MainContainerTemplate = Container.template(function($) { return {
+  top: 65, bottom: 60, height:400, width: 400, skin: greySkin, active: true,
+  behavior: Object.create(Container.prototype, {
+    onTouchEnded: { value: function(content){
+      KEYBOARD.hide();
+      content.focus();
+      var hourString = hourfieldbox.first.first.string;
+      var minuteString = minutefieldbox.first.first.string
+      var isValid = false;
+      if(reg.test(hourString) && reg.test(minuteString)) {
+      	currentHour = parseInt(hourfieldbox.first.first.string);
+      	currentMinute = parseInt(minutefieldbox.first.first.string);
+      	if(currentHour > 1 && currentHour <= 24 && currentMinute >= 0 && currentMinute < 60) {
+      		isValid = true;
+      	} else {
+      	hourfieldbox.first.first.string = ''
+      	hourLabel.container.hint.visible = true;
+      	hourLabel.string = "Bounds";
+      	minutefieldbox.first.first.string = ''
+      	minuteLabel.container.hint.visible = true;
+      	minuteLabel.string = "Bounds";
+      	}
+      } else {
+      	hourfieldbox.first.first.string = ''
+      	hourLabel.container.hint.visible = true;
+      	hourLabel.string = "Err";
+      	minutefieldbox.first.first.string = ''
+      	minuteLabel.container.hint.visible = true;
+      	minuteLabel.string = "Err";
+      }
+      if(reg.test(hourfieldbox.first.first.string) && reg.test(minutefieldbox.first.first.string) && isValid) {
+      	application.invoke(new Message("/sendNewAlarm"));
+      }
+      
+    }}
+  })
+}});
+var alarmContainer = new MainContainerTemplate();
+//alarmContainer.add(alarmLabel);
+alarmContainer.add(alarmSwitch);
+//alarmContainer.add(newColonLabel);
+alarmContainer.add(hourfieldbox);
+alarmContainer.add(minutefieldbox);
  
  
 /////////////////////////////////////////////////////////////////////
@@ -406,8 +434,6 @@ Handler.bind("/removeYo", Behavior({
 
 
 var THEMESAMPLE = require('themes/sample/theme');
-var CONTROL = require('mobile/control');
-var KEYBOARD = require('mobile/keyboard');
 
 var nameInputSkin = new Skin({ borders: { left:2, right:2, top:2, bottom:2 }, stroke: 'gray',});
 var fieldStyle = new Style({ color: 'black', font: 'bold 24px', horizontal: 'left', vertical: 'middle', left: 5, right: 5, top: 5, bottom: 5, });
@@ -719,6 +745,7 @@ var yoTabImage = new Picture({
         bottom: 5, left: 180, height:50, width:50, url:yoImageURL, active:true, behavior: yoTap});
 var drawTabImage = new Picture({
         bottom: 5, left: 265, height:50, width:50, url:drawImageURL, active:true, behavior: drawTap});
+        
  
 ////////////////////////////////////////////
 //
